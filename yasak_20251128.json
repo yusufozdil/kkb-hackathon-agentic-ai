@@ -1,0 +1,386 @@
+[
+    {
+        "Page": 271,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "1 / YIL"
+        },
+        "Idare": {
+            "Unvan": "DÖRTYOL BELEDİYE BAŞKANLIĞI",
+            "Adres": "4447712"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "MKA GLOBAL TURİZM TAŞIMACILIK PETROL İNŞAAT SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
+            "Vergi_No": "6222397947",
+            "TC_No": null,
+            "Adres": "MANOLYA SK. (CADISK. No:18 A YEŞİLKÖY MAH. (MAHALLEISEMT) DÖRTYOL HATAY"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 272,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "6 /AY"
+        },
+        "Idare": {
+            "Unvan": "Yomra Belediye Başkanlığı",
+            "Adres": "0 462 341 11 33"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "ABDULLAH SAĞLAM",
+            "Vergi_No": "7380907980",
+            "TC_No": null,
+            "Adres": "KALKINMA MAH. 115 NOLU SK. NO: 5 İÇ KAPI NO: 7 ORTAHİSAR TRABZON"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 273,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "6/AY"
+        },
+        "Idare": {
+            "Unvan": "ONİKİŞUBAT BELEDİYE BAŞKANLIĞI",
+            "Adres": "03442124646"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "GÖKHAN KARAPINAR",
+            "Vergi_No": "5200498568",
+            "TC_No": null,
+            "Adres": "CUMHURİYET MAH. 14042. SK ÜSKÜDAR SİTESİ C BLOK ÜSKÜDAR SİTESİ C BLOK NO: 6 İÇ KAPI NO: K ONİKİŞUBAT KAHRAMANMARAŞ"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 275,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": "ONİKİŞUBAT BELEDİYE BAŞKANLIĞI PARK VE BAHÇELER MÜDÜRLÜĞÜ",
+            "Adres": "03442124646 onikisubat@hso 1 tr kep.t"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "METAER YAPI İNŞAAT GIDA TEMİZLİK HAYVANCILIK YEMEKÇİLİK NAKLİYAT PAZARLAMA SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
+            "Vergi_No": "6190563407",
+            "TC_No": null,
+            "Adres": "36010. SK. AKKÖK APT. (CAD.ISK.) No:7/3 İSMET PAŞA MAH. (MAHALLEISEMT) DULKADİROĞLU KAHRAMANMARAŞ"
+        },
+        "Ortaklar": [
+            {
+                "Unvan": "TOLGA ERDEMİR",
+                "ID": null
+            }
+        ]
+    },
+    {
+        "Page": 277,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "1 / YIL"
+        },
+        "Idare": {
+            "Unvan": "KÜTAHYA BELEDİYE BAŞKANLIĞI",
+            "Adres": "028502834343"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "ARZU ÖZKOÇ",
+            "Vergi_No": "7000205962",
+            "TC_No": null,
+            "Adres": "MECİDİYE MAH. 1. MECİDİYE SK. NO: 10 İÇ KAPI NO: 1 MERKEZ / KÜTAHYA"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 278,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "1 / YIL"
+        },
+        "Idare": {
+            "Unvan": "KÜTAHYA BELEDİYE BAŞKANLIĞI",
+            "Adres": "08502834343"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "GENÇLERDEN GENÇLERE DERNEĞİ",
+            "Vergi_No": "3931204270",
+            "TC_No": null,
+            "Adres": "ERTUĞRULGAZİ CAD. (CADISK.) No:24/1 MARUF MAH. (MAHALLEISEMT) MERKEZ KÜTAHYA"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 279,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "1 / YIL"
+        },
+        "Idare": {
+            "Unvan": "Ula Belediye Başkanlığı",
+            "Adres": "(0252) 242 30 08"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "KÜRESEL GERİ DÖNÜŞÜM KAYNAKLARI İÇ VE DIŞ TİCARET LİMİTED ŞİRKETİ",
+            "Vergi_No": "6060520015",
+            "TC_No": null,
+            "Adres": "ADNAN MENDERES BLV. CANATAN APT. (CAD.ISK.) No:24/13 PALMİYE MAH. (MAHALLEISEMT) YENİŞEHİR MERSİN"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 280,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "1 / YIL"
+        },
+        "Idare": {
+            "Unvan": "Dalaman Belediye Başkanlığı",
+            "Adres": "0 252 692 20 10"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "MEHMET NEDİM NİĞDELİOĞLU",
+            "Vergi_No": "6310042812",
+            "TC_No": null,
+            "Adres": "DALYAN MAH. SULUNGUR CAD. NO: 82 ORTACA MUĞLA"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 281,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "6 /AY"
+        },
+        "Idare": {
+            "Unvan": "MERSİN BÜYÜKŞEHİR BELEDİYE BAŞKANLIĞI",
+            "Adres": "03245331401"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "MERSİN EGE TURİZM TAŞIMACILIK İNŞAAT OTOMOTİV TARIM ÜRÜNLERİ SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
+            "Vergi_No": "6180420066",
+            "TC_No": null,
+            "Adres": "MİMAR SİNAN BLV OTOGAR DÜKKANLAR MESOT (CAD.ISK .) No:190 /1/Z10 KORUKENT MAH (MAHALLEISEMT) TOROSLAR MERSİN"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 284,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "1 / YIL"
+        },
+        "Idare": {
+            "Unvan": "DİYARBAKIR BÜYÜKŞEHİR BELEDİYE BAŞKANLIĞI MALİ HİZMETLER DAİRESİ BAŞKANLIĞI",
+            "Adres": "04122294880 buyuksehirbelediyesi@hsO l .kep.tr"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "MERİC İNŞAAT NAKLİYE TEMİZLİK GIDA TARIM SOSYAL TESİS SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
+            "Vergi_No": "6170416015",
+            "TC_No": null,
+            "Adres": "ELAZIĞ BLV. LİVA PLAZA LİVA PLAZA A-BLOK (CADISK. No:225/26 FABRİKA MAH. (MAHALLEISEMT) YENİŞEHİR DİYARBAKIR"
+        },
+        "Ortaklar": [
+            {
+                "Unvan": "TAHSİN TÜT",
+                "ID": null
+            }
+        ]
+    },
+    {
+        "Page": 286,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "1 / YIL"
+        },
+        "Idare": {
+            "Unvan": "Ankara Elektrik, Havagazı ve Otobüs İşletme Müessesesi Genel Müdürlüğü",
+            "Adres": "0 312 306 78 58"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "MUHAMMED RUFAİ SARIKAYA",
+            "Vergi_No": "7490597482",
+            "TC_No": null,
+            "Adres": "KARAPÜRÇEK MAH. 283 SK. NO: 29 İÇ KAPI NO: 19 ALTINDAĞ / ANKARA"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 287,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "6 / AY"
+        },
+        "Idare": {
+            "Unvan": "Avanos Belediye Başkanlığı",
+            "Adres": "0 384 511 40 64"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "ZEKERİYA ORMAN",
+            "Vergi_No": "6470210115",
+            "TC_No": "55894100046",
+            "Adres": "YUKARI MAH. YEĞENAĞA SK. NO: 9 AVANOS / NEVŞEHİR"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 288,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "1 / YIL"
+        },
+        "Idare": {
+            "Unvan": "ADANA SU VE KANALİZASYON İDARESİ GENEL MÜDÜRLÜĞÜ",
+            "Adres": "03224571025 adanaaski@hso l .kep.tr"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "YEMLİHA DOĞAN",
+            "Vergi_No": "3060378755",
+            "TC_No": null,
+            "Adres": "EMİRİLYAS MAH. EMİRİLYAS SK. NO: 75 AFŞİN KAHRAMANMARAŞ"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 289,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "1 / YIL"
+        },
+        "Idare": {
+            "Unvan": "ADANA SU VE KANALİZASYON İDARESİ GENEL MÜDÜRLÜĞÜ",
+            "Adres": "03224571025 adanaaski@hsoI .kep.tr"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "DYA İNŞAAT SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
+            "Vergi_No": "3230795002",
+            "TC_No": null,
+            "Adres": "77176 SK. (CADISK.) No:1/02 HUZUREVLERİ MAH. (MAHALLEISEMT) ÇUKUROVA ADANA"
+        },
+        "Ortaklar": [
+            {
+                "Unvan": "YEŞİM ATAMAN",
+                "ID": null
+            }
+        ]
+    },
+    {
+        "Page": 290,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "6 / AY"
+        },
+        "Idare": {
+            "Unvan": "Iğdır Belediye Başkanlığı",
+            "Adres": "0476 227 65 53"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "RABİA RAHŞAN KARADENİZ",
+            "Vergi_No": "5091066703",
+            "TC_No": null,
+            "Adres": "TOPÇULAR MAH. TOMURCUK SK. ARDIL APT. NO: 3 İÇ KAPI NO: 9 MERKEZ IĞDIR"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 291,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "6 / AY"
+        },
+        "Idare": {
+            "Unvan": "Sivrihisar Belediye Başkanlığı",
+            "Adres": "05438524604"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "HALİS TEMEL",
+            "Vergi_No": "8370074836",
+            "TC_No": null,
+            "Adres": "ŞEHİTLİK MAH. FEVZİ ÇAKMAK CAD. BIL.BOZ SITESI SİTESİ BİL.BOZ APT A BLOK NO: SIA İÇ KAPI NO: 4 POLATLI ANKARA"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 292,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": "1 / YIL"
+        },
+        "Idare": {
+            "Unvan": "DİN ÖĞRETİMİ GENEL MÜDÜRLÜĞÜ",
+            "Adres": "05556300051 meb@hsOl kep.tr"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "REŞİT ÇANAKLI",
+            "Vergi_No": "2290553035",
+            "TC_No": null,
+            "Adres": "FAHRETTİN PAŞA MAH. 1437.SK. NO: 2 İÇ KAPI NO: TARSUS MERSİN"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 293,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": null,
+            "Adres": "02324551400 icisleribakanligi@hso1 Lkep 1"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "NURPA MÜHENDİSLİK SANAYİ VE TICARET ANONİM ŞİRKETİ | METAG İNŞAAT TİCARET ANONİM ŞIRKETİ",
+            "Vergi_No": "6190206355",
+            "TC_No": null,
+            "Adres": "3028 CAD. (CADISK.) No:6/116 KONUTKENT MAH. (MAHALLEISEMT) ÇANKAYA ANKARA"
+        },
+        "Ortaklar": [
+            {
+                "Unvan": "CEMİL ERKAN",
+                "ID": null
+            },
+            {
+                "Unvan": "METAG HOLDİNG ANONİM ŞİRKETİ",
+                "ID": null
+            }
+        ]
+    }
+]

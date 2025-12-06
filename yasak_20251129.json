@@ -1,0 +1,272 @@
+[
+    {
+        "Page": 61,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": "Pamukkale Belediye Başkanlığı",
+            "Adres": "444 9 220"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "EMRAH KILIÇ",
+            "Vergi_No": null,
+            "TC_No": null,
+            "Adres": null
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 62,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": null,
+            "Adres": "04122294880 buyuksehirbelediyesi@hso1 kep"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "MİD YAPI İNŞAAT PETROL OTOMOTİV MOBİLYA SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
+            "Vergi_No": null,
+            "TC_No": null,
+            "Adres": "507. SK. ÇEYSA SERHAT PLAZA B- BLOK (CADISK.) No:13 B/28 FIRAT MAH. (MAHALLEISEMT) KAYAPINAR DİYARBAKIR"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 63,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": "DİYARBAKIR BÜYÜKŞEHİR BELEDİYE BAŞKANLIĞI MALİ HİZMETLER DAİRESİ BAŞKANLIĞI",
+            "Adres": "04122294880 buyuksehirbelediyesi@hso 1 kep.tr"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "SUR PEYZAJ OTOMOTİV PETROL TURİZM TAŞIMACILIK NAKLİYE İNŞAAT SANAYİ TİCARET LİMİTED ŞİRKETİ",
+            "Vergi_No": "7840311552",
+            "TC_No": null,
+            "Adres": null
+        },
+        "Ortaklar": [
+            {
+                "Unvan": "VEYSEL ÜÇDAĞ",
+                "ID": null
+            }
+        ]
+    },
+    {
+        "Page": 65,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": "ANKARA ELEKTRİK, HAVAGAZI VE OTOBÜS İŞLETME MÜESSESESİ GENEL MÜDÜRLÜĞÜ ARAÇ BAKIM ONARIM DAİRESİ BAŞKANLIĞI VE",
+            "Adres": "03123840153 ego@hs0] tr kep t"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "MESUT ÖZYAZICI",
+            "Vergi_No": "7170027323",
+            "TC_No": null,
+            "Adres": "BİRLİK MAH. 4261 SK_ NO: 42 İÇ KAPI NO: 2 BORNOVA İZMİR"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 66,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": "Ankara Elektrik, Havagazı ve Otobüs İşletme Müessesesi Genel Müdürlüğü",
+            "Adres": "0 312 306 78 60"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "KADİR ÇOKÇEVİK",
+            "Vergi_No": "25333231990",
+            "TC_No": null,
+            "Adres": "YAYLA MAH. 1439 SK NO: 3 İÇ KAPI NO: 7 KEÇİÖREN ANKARA"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 67,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": "İSTANBUL ULAŞIM HİZMETLERİ VE ARAÇ KİRALAMA SANAYİ VE TİCARET ANONİM ŞİRKETİ",
+            "Adres": "02122403400 istanbulotobus@hso 1 .kep.tr"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "UZMAN ATIK YÖNETİMİ TURİZM TEMİZLİK İNŞAAT GIDA SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
+            "Vergi_No": "9010572018",
+            "TC_No": null,
+            "Adres": "MERKEZ CAD. KARAKAŞ IŞ HANI (CADISK. No:16/28 TEVFİKBEY MAH (MAHALLEISEMT) KÜÇÜKÇEKMECE İSTANBUL"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 74,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": null,
+            "Adres": null
+        },
+        "Yasakli_Firma": {
+            "Unvan": "KIYAS AYDIN",
+            "Vergi_No": "1130311032",
+            "TC_No": null,
+            "Adres": "Cumhuriyet Mahallesi Turan Çelebi Caddesi No:25"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 77,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": null,
+            "Adres": null
+        },
+        "Yasakli_Firma": {
+            "Unvan": "RAMAZAN GÜNDOĞDU",
+            "Vergi_No": "13133327654",
+            "TC_No": null,
+            "Adres": null
+        },
+        "Ortaklar": [
+            {
+                "Unvan": "39 Posta Kodu (71100 IKIRIKKALEIKIRIKKALE MERKEZ ivilçe",
+                "ID": null
+            }
+        ]
+    },
+    {
+        "Page": 79,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": "Kulu Kaymakamlığı (Milli Emlak Şefliği)",
+            "Adres": "0332 2239390 konyacevreveschircilik@hso [ .kep.tr"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "HASAN YURTTAŞ",
+            "Vergi_No": "9870203667",
+            "TC_No": null,
+            "Adres": "SV-AMSTERDAM HOLLANDA KRALLIĞI"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 82,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": "Ercğli Kaymakamlığı (Milli Emlak Şcfliği)",
+            "Adres": null
+        },
+        "Yasakli_Firma": {
+            "Unvan": "ULAŞ KUZUCU",
+            "Vergi_No": "6020212135",
+            "TC_No": null,
+            "Adres": "55A İÇ KAPI NO: 32 EREĞLİ KONYA"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 87,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": "Niksar Kaymakamlığı (Milli Emlak Şefliği)",
+            "Adres": "60100"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "FATMA PEKDAŞ",
+            "Vergi_No": "7250219262",
+            "TC_No": null,
+            "Adres": "YOLKONAK BELDESİ HASYER MAH HASYER SK. NO: 79 NİKSAR TOKAT"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 106,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": "TEMEL EĞİTİM GENEL MÜDÜRLÜĞ0)",
+            "Adres": "03124132733 meb@hsol kep.tr"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "SELMA PEHLİVANOĞLU",
+            "Vergi_No": "8980204716",
+            "TC_No": null,
+            "Adres": "408 EVLER MAH. YAVUZ SELİM CAD. NO: 9 KIRIKHAN HATAY"
+        },
+        "Ortaklar": []
+    },
+    {
+        "Page": 107,
+        "Global_Info": {
+            "Yasak_Kayit_No": null,
+            "IKN": null,
+            "Bakanlik": null,
+            "Yasak_Suresi": null
+        },
+        "Idare": {
+            "Unvan": "TEMEL EĞİTİM GENEL MÜDÜRLÜĞy",
+            "Adres": "03124132733 meb@hso [ tr kep E"
+        },
+        "Yasakli_Firma": {
+            "Unvan": "KEVSER DUYGU TAKTİK",
+            "Vergi_No": "8160665437",
+            "TC_No": null,
+            "Adres": "ÖZYÖRÜK MAH. 3001 SK. NO: 4 İÇ KAPI NO: 9 KIRIKHAN HATAY"
+        },
+        "Ortaklar": []
+    }
+]
