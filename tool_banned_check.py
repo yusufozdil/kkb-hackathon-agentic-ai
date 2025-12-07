@@ -8,6 +8,11 @@ import easyocr
 import json
 import os
 import re
+import ssl
+
+# GLOBAL SSL BYPASS FOR EASYOCR MODEL DOWNLOAD
+# This fixes the "CERTIFICATE_VERIFY_FAILED" error in urllib/easyocr
+ssl._create_default_https_context = ssl._create_unverified_context
 
 # ---------------------------------------------------------
 # CONFIGURATION
@@ -24,6 +29,8 @@ CIPHERS = "ECDHE+AESGCM:ECDHE+CHACHA20:ECDHE+AES256:!aNULL:!eNULL:!EXPORT:!DES:!
 class TLSAdapter(HTTPAdapter):
     def init_poolmanager(self, *args, **kwargs):
         ctx = create_urllib3_context(ciphers=CIPHERS)
+        ctx.check_hostname = False       # Önce hostname kontrolünü kapat
+        ctx.verify_mode = ssl.CERT_NONE  # Sonra sertifika doğrulamasını kapat
         kwargs["ssl_context"] = ctx
         return super().init_poolmanager(*args, **kwargs)
 
@@ -32,17 +39,42 @@ def get_pdf_url(date_str):
     month = date_str[4:6]
     return f"https://www.resmigazete.gov.tr/eskiler/{year}/{month}/{date_str}.pdf"
 
+import warnings
+from urllib3.exceptions import InsecureRequestWarning
+
+# Suppress only the single warning from urllib3 needed.
+warnings.simplefilter('ignore', InsecureRequestWarning)
+
 def download_pdf_to_memory(url):
-    print(f"⬇️ Downloading: {url}")
+    print(f"Downloading: {url}")
     session = requests.Session()
     session.mount("https://", TLSAdapter())
-    session.headers.update({"User-Agent": "Mozilla/5.0"})
+    session.mount("https://", TLSAdapter())
+    
+    # Full Browser Headers to look legit
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1"
+    }
+    session.headers.update(headers)
+    
     try:
-        r = session.get(url, timeout=60, stream=True)
+        # verify=False is often needed for gov.tr sites with legacy certs
+        r = session.get(url, timeout=60, stream=True, verify=False)
         r.raise_for_status()
+        print(f"Download Success: {len(r.content)} bytes")
         return r.content
     except Exception as e:
-        print(f"❌ Error: {e}")
+        status_code = getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'
+        print(f"Download Failed. Status: {status_code}. Error: {e}")
         return None
 
 # ---------------------------------------------------------
@@ -56,18 +88,24 @@ def normalize_tr(text):
         text = text.replace(k, v)
     return text
 
-def pdf_bytes_to_images(pdf_bytes):
+def pdf_bytes_to_images(pdf_bytes, company_filter=None):
     """
     State Machine for PDF extraction:
     1. Wait for 'CESITLI ILANLAR'.
     2. Check for 'YASAKLAMA KARARI'.
     3. Check for '-1' in footer.
+    
+    Args:
+        company_filter (str): If set, scans text layer first. 
+                              Yields image ONLY if company name is found in text.
     """
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     
     in_ads_section = False
     
-    print("🔍 Scanning PDF structure...")
+    print("Scanning PDF structure...")
+
+    filter_norm = normalize_tr(company_filter) if company_filter else None
 
     for page_num, page in enumerate(doc):
         text_raw = page.get_text("text") # Get plain text
@@ -87,15 +125,19 @@ def pdf_bytes_to_images(pdf_bytes):
         has_keyword = "YASAKLAMA KARARI" in text_norm or "YASAKLANAN" in text_norm
         
         # Criteria B: Footer Check ("-1")
-        # We look at the last 100 characters of the page text for "-1"
-        # Resmi Gazete pagination for this section usually looks like "1234/1-1"
         footer_check = "-1" in text_raw[-100:] if len(text_raw) > 100 else False
 
         if has_keyword:
-            # Extra safety: If user insists on "-1", we prioritize it.
-            # But sometimes OCR might miss the footer, so we trust the Keyword primarily.
-            # However, if the section ended, we stop.
-            
+            # OPTIMIZATION: Text Filter Check
+            if filter_norm:
+                # If we are looking for a specific company, and it's NOT in the text layer,
+                # we skip the expensive OCR / Image rendering.
+                if filter_norm not in text_norm:
+                    # print(f"   [Skipping Page {page_num+1}: Keyword found but Company '{company_filter}' not in text]")
+                    continue
+                else:
+                    print(f"    MATCH! Company '{company_filter}' found in text on Page {page_num+1}!")
+
             print(f"   -> extracting Page {page_num + 1}...")
             
             # Render Page to OpenCV Image
@@ -110,12 +152,8 @@ def pdf_bytes_to_images(pdf_bytes):
             yield (page_num + 1, img_cv)
         
         # 3. STOP CONDITION (Optional Logic)
-        # If we were in the section, but now we don't see "-1" AND don't see keywords
-        # and the page text is substantial, we might have exited the section.
         elif in_ads_section and len(text_raw) > 200 and not footer_check:
-             # We assume the section continues until end of file, but if specific markers change:
-             # pass 
-             pass
+            pass
 
 # ---------------------------------------------------------
 # 3. COMPUTER VISION & OCR (SAME AS BEFORE)
@@ -224,28 +262,82 @@ def process_single_page(img, page_num, reader):
     return entry
 
 # ---------------------------------------------------------
-# MAIN
+# MAIN FUNCTION WRAPPER
 # ---------------------------------------------------------
-if __name__ == "__main__":
-    url = get_pdf_url(TARGET_DATE)
-    pdf_data = download_pdf_to_memory(url)
+def check_banned_status(date_str, company_name=None):
+    """
+    Checks the Official Gazette for banned company decisions.
+    
+    Args:
+        date_str (str): Date in YYYYMMDD format.
+        company_name (str, optional): Specific company to search for. 
+                                      If provided, uses FAST text-based pre-filtering.
+                                      If None, performs SLOW full OCR scan of all relevant pages.
+    """
+    # 0. CHECK CACHED JSON (Full Dataset)
+    # If we have already scanned the entire day, just look it up!
+    if os.path.exists(OUTPUT_JSON):
+        print(f"⚡ Loading cached results from {OUTPUT_JSON}...")
+        try:
+            with open(OUTPUT_JSON, "r", encoding="utf-8") as f:
+                all_results = json.load(f)
+            
+            if company_name:
+                # Filter cached results
+                search_norm = normalize_tr(company_name)
+                filtered = [r for r in all_results if search_norm in normalize_tr(str(r.get("Yasakli_Firma", {}).get("Unvan", "")))]
+                return filtered
+            return all_results
+        except Exception as e:
+            print(f"Cache read error: {e}")
+
+    # 1. DOWNLOAD OR LOAD PDF
+    url = get_pdf_url(date_str)
+    pdf_filename = f"{date_str}.pdf"
+    
+    if os.path.exists(pdf_filename):
+        print(f"Using cached PDF: {pdf_filename}")
+        with open(pdf_filename, "rb") as f:
+            pdf_data = f.read()
+    else:
+        pdf_data = download_pdf_to_memory(url)
+        if pdf_data:
+            with open(pdf_filename, "wb") as f:
+                f.write(pdf_data)
+                print(f"Saved PDF to cache: {pdf_filename}")
+
+    final_results = []
     
     if pdf_data:
-        print("🧠 Initializing OCR...")
+        print(f"Initializing OCR for date {date_str}...")
+        if company_name:
+            print(f"FAST MODE: Searching specific company: '{company_name}'")
+            
         reader = easyocr.Reader(['tr'], gpu=USE_GPU)
-        final_results = []
         
-        for page_num, img_cv in pdf_bytes_to_images(pdf_data):
+        # We pass company_name to the generator to enable Smart Skip
+        for page_num, img_cv in pdf_bytes_to_images(pdf_data, company_filter=company_name):
             try:
                 data = process_single_page(img_cv, page_num, reader)
                 if data and (data["Yasakli_Firma"]["Unvan"] or data["Global_Info"]["Yasak_Kayit_No"]):
                     final_results.append(data)
             except Exception as e:
-                print(f"⚠️ Error Page {page_num}: {e}")
+                print(f"Error Page {page_num}: {e}")
 
-        if final_results:
-            with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
-                json.dump(final_results, f, ensure_ascii=False, indent=4)
-            print(f"\n✅ Saved {len(final_results)} records to {OUTPUT_JSON}")
-        else:
-            print("\n⚠️ No records found.")
+        # Only save Full JSON if we did a Full Scan (no filter)
+        if not company_name:
+            if final_results:
+                with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
+                    json.dump(final_results, f, ensure_ascii=False, indent=4)
+                print(f"Saved {len(final_results)} records to {OUTPUT_JSON}")
+
+    return final_results
+
+if __name__ == "__main__":
+    results = check_banned_status(TARGET_DATE)
+    if results:
+        with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
+            json.dump(results, f, ensure_ascii=False, indent=4)
+        print(f"Saved {len(results)} records to {OUTPUT_JSON}")
+    else:
+        print("No records found.")

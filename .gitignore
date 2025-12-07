@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+.venv/
+env/
+
+# Mac
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+
+# CrewAI / LiteLLM logs
+logs/
+.crewai/
+

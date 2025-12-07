@@ -1,0 +1,7 @@
+crewai
+langchain_community
+requests
+pymupdf
+opencv-python-headless
+numpy
+easyocr
