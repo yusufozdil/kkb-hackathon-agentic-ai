@@ -1,0 +1,138 @@
+{
+    "Summary_Analysis": {
+        "Geçmiş ihaleler": [
+            "1 İhale"
+        ],
+        "Katılabileceği ihaleler": [
+            "5 İhale"
+        ],
+        "Tamamlanan": [
+            "1 İhale",
+            "₺624.340"
+        ],
+        "Toplam iş bitirme (5 Yıl)": [
+            "1 Sözleşme",
+            "₺624.340"
+        ],
+        "Toplam sözleşme": [
+            "1 Sözleşme",
+            "₺624.340"
+        ],
+        "Yıllık ortalama": [
+            "1 Sözleşme",
+            "₺624.340"
+        ],
+        "İlk sözleşme tarihi": [
+            "14.03.2025"
+        ],
+        "Son sözleşme tarihi": [
+            "14.03.2025"
+        ]
+    },
+    "Yearly_Stats": [
+        {
+            "Yıl": "2025",
+            "Ort. katılımcı": "-",
+            "Ort. geçerli teklif": "-",
+            "Tenzilat": "-",
+            "Devam eden": "0 ihale",
+            "Tamamlanan": "1 ihale",
+            "Yıllık ortalama": "₺624.340",
+            "Toplam sözleşme": "₺624.340"
+        }
+    ],
+    "Sectors_CPV": [
+        {
+            "Sektör": "31651000",
+            "Sektör adı": "ELEKTRİK BANDI",
+            "Güncel": "0 ihale",
+            "Geçmiş": "1 ihale",
+            "Devam eden": "0 ihale",
+            "Tamamlanan": "1 ihale",
+            "Toplam sözleşme": "₺624.340"
+        },
+        {
+            "Sektör": "31650000",
+            "Sektör adı": "YALITICI BAĞLANTI ELEMANLARI",
+            "Güncel": "0 ihale",
+            "Geçmiş": "1 ihale",
+            "Devam eden": "0 ihale",
+            "Tamamlanan": "1 ihale",
+            "Toplam sözleşme": "₺624.340"
+        },
+        {
+            "Sektör": "31000000",
+            "Sektör adı": "ELEKTRİKLİ MAKİNE, CİHAZ, EKİPMAN VE SARF MALZEMELERİ; AYDINLATMA",
+            "Güncel": "0 ihale",
+            "Geçmiş": "1 ihale",
+            "Devam eden": "0 ihale",
+            "Tamamlanan": "1 ihale",
+            "Toplam sözleşme": "₺624.340"
+        },
+        {
+            "Sektör": "31600000",
+            "Sektör adı": "ELEKTRİKSEL EKİPMAN VE DÜZENEKLER",
+            "Güncel": "0 ihale",
+            "Geçmiş": "1 ihale",
+            "Devam eden": "0 ihale",
+            "Tamamlanan": "1 ihale",
+            "Toplam sözleşme": "₺624.340"
+        }
+    ],
+    "Provinces": [
+        {
+            "Şehir": "Balıkesir",
+            "Güncel": "0 ihale",
+            "Geçmiş": "1 ihale",
+            "Devam eden": "0 ihale",
+            "Tamamlanan": "1 ihale",
+            "Toplam sözleşme": "₺624.340"
+        }
+    ],
+    "Work_Types": [
+        {
+            "İhale türü": "Mal Alımı",
+            "Güncel": "0 ihale",
+            "Geçmiş": "1 ihale",
+            "Devam eden": "0 ihale",
+            "Tamamlanan": "1 ihale",
+            "Toplam sözleşme": "₺624.340"
+        }
+    ],
+    "Procedures": [
+        {
+            "İhale usulü": "Doğrudan temin (22/d)",
+            "Güncel": "0 ihale",
+            "Geçmiş": "1 ihale",
+            "Devam eden": "0 ihale",
+            "Tamamlanan": "1 ihale",
+            "Toplam sözleşme": "₺624.340"
+        },
+        {
+            "İhale usulü": "Doğrudan temin (22/d) Parasal Limit",
+            "Güncel": "0 ihale",
+            "Geçmiş": "1 ihale",
+            "Devam eden": "0 ihale",
+            "Tamamlanan": "1 ihale",
+            "Toplam sözleşme": "₺624.340"
+        },
+        {
+            "İhale usulü": "Doğrudan temin",
+            "Güncel": "0 ihale",
+            "Geçmiş": "1 ihale",
+            "Devam eden": "0 ihale",
+            "Tamamlanan": "1 ihale",
+            "Toplam sözleşme": "₺624.340"
+        }
+    ],
+    "Offer_Types": [
+        {
+            "Teklif türü": "Kısmi teklif verilemez",
+            "Güncel": "0 ihale",
+            "Geçmiş": "1 ihale",
+            "Devam eden": "0 ihale",
+            "Tamamlanan": "1 ihale",
+            "Toplam sözleşme": "₺624.340"
+        }
+    ]
+}
