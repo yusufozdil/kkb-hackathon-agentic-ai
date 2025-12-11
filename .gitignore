@@ -15,8 +15,25 @@ env/
 .vscode/
 .idea/
 
-
 # CrewAI / LiteLLM logs
 logs/
 .crewai/
 
+# Project Data
+data/pdf_cache/*.pdf
+data/captcha_debug/
+*.db-journal
+
+# Output files
+yasak_*.json
+news_result.json
+ihale_result.json
+
+# Temporary files
+ocr_tmp/
+captcha.png
+captcha_*.png
+
+# Keep DB and structure
+!data/ihale_yasakli.db
+!data/pdf_cache/.gitkeep
