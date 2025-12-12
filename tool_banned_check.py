@@ -102,7 +102,9 @@ def pdf_bytes_to_images(pdf_bytes, company_filter=None):
     
     Args:
         company_filter (str): If set, scans text layer first. 
-                              Yields image ONLY if company name is found in text.
+                              Yields image AND text ONLY if company name is found.
+    Returns:
+        Tuple: (page_num, img_cv, text_raw) - text_raw PDFden text layer
     """
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     
@@ -126,24 +128,32 @@ def pdf_bytes_to_images(pdf_bytes, company_filter=None):
             continue
 
         # 2. CHECK IF THIS PAGE IS A "BAN" PAGE
-        # Criteria A: Must have "YASAKLAMA KARARI"
-        has_keyword = "YASAKLAMA KARARI" in text_norm or "YASAKLANAN" in text_norm
-        
-        # Criteria B: Footer Check ("-1")
-        footer_check = "-1" in text_raw[-100:] if len(text_raw) > 100 else False
+        # Criteria: Must have ban-related keywords
+        has_keyword = (
+            "YASAKLAMA KARARI" in text_norm or 
+            "YASAKLANAN" in text_norm or
+            ("IHALE" in text_norm and "YASAKLI" in text_norm) or
+            "IHALEYE KATILMAKTAN YASAKLAMA" in text_norm
+        )
 
         if has_keyword:
             # OPTIMIZATION: Text Filter Check
-            if filter_norm:
-                # If we are looking for a specific company, and it's NOT in the text layer,
-                # we skip the expensive OCR / Image rendering.
+            # BUT: If text layer is too short (<500 chars), it might not contain company names
+            # because they're in tables. In that case, we should still extract and OCR.
+            if filter_norm and len(text_raw) > 500:
+                # Text layer is substantial - we can trust it for filtering
                 if filter_norm not in text_norm:
-                    # print(f"   [Skipping Page {page_num+1}: Keyword found but Company '{company_filter}' not in text]")
+                    print(f"   [Skipping Page {page_num+1}: Company '{company_filter}' not in text]")
                     continue
                 else:
-                    print(f"    MATCH! Company '{company_filter}' found in text on Page {page_num+1}!")
-
-            print(f"   -> extracting Page {page_num + 1}...")
+                    print(f"    ✅ MATCH! Company '{company_filter}' found in text on Page {page_num+1}!")
+            elif filter_norm and len(text_raw) <= 500:
+                # Text layer too short - company name might be in table (invisible to text extraction)
+                # We'll extract and OCR, then check company name in OCR results
+                print(f"   -> extracting Page {page_num + 1} (text layer too short: {len(text_raw)} chars, OCR needed)...")
+            else:
+                # No filter - extract everything
+                print(f"   -> extracting Page {page_num + 1}...")
             
             # Render Page to OpenCV Image
             pix = page.get_pixmap(matrix=fitz.Matrix(2.5, 2.5))
@@ -154,11 +164,78 @@ def pdf_bytes_to_images(pdf_bytes, company_filter=None):
             elif pix.n == 4: img_cv = cv2.cvtColor(img_array, cv2.COLOR_RGBA2BGR)
             else: img_cv = img_array
             
-            yield (page_num + 1, img_cv)
+            # Text layer'ı da gönder
+            yield (page_num + 1, img_cv, text_raw)
+
+# ---------------------------------------------------------
+# 2.5. TEXT LAYER PARSING (FALLBACK METHOD)
+# ---------------------------------------------------------
+def parse_text_layer(text_raw: str, page_num: int) -> Optional[Dict]:
+    """
+    PDF'in text layer'ından bilgi çıkar (OCR'a gerek kalmadan).
+    Basit regex ve pattern matching kullanır.
+    """
+    if not text_raw or len(text_raw) < 50:
+        return None
+    
+    entry = {
+        "Page": page_num,
+        "Global_Info": {"Yasak_Kayit_No": None, "IKN": None, "Bakanlik": None, "Yasak_Suresi": None},
+        "Idare": {"Unvan": None, "Adres": None},
+        "Yasakli_Firma": {"Unvan": None, "Vergi_No": None, "TC_No": None, "Adres": None},
+        "Ortaklar": []
+    }
+    
+    lines = text_raw.split("\n")
+    
+    for i, line in enumerate(lines):
+        line_clean = line.strip()
+        line_upper = line_clean.upper()
         
-        # 3. STOP CONDITION (Optional Logic)
-        elif in_ads_section and len(text_raw) > 200 and not footer_check:
-            pass
+        # Firma adı tespiti
+        if ("İHALECİ" in line_upper or "FİRMA" in line_upper or "ŞİRKET" in line_upper) and "ADI" in line_upper:
+            # Bir sonraki satırlar firma adı olabilir
+            for j in range(i+1, min(i+5, len(lines))):
+                potential_name = lines[j].strip()
+                if len(potential_name) > 5 and not any(k in potential_name.upper() for k in ["VERGİ", "ADRES", "TC", "İKN"]):
+                    entry["Yasakli_Firma"]["Unvan"] = potential_name
+                    print(f"[TEXT] Found company name: {potential_name}")
+                    break
+        
+        # Vergi No
+        if "VERGİ" in line_upper and "NO" in line_upper:
+            numbers = re.findall(r'\d{10,}', line_clean)
+            if numbers:
+                entry["Yasakli_Firma"]["Vergi_No"] = numbers[0]
+                print(f"[TEXT] Found Vergi No: {numbers[0]}")
+        
+        # TC No
+        if "T.C" in line_upper or "TC KİMLİK" in line_upper:
+            numbers = re.findall(r'\d{11}', line_clean)
+            if numbers:
+                entry["Yasakli_Firma"]["TC_No"] = numbers[0]
+                print(f"[TEXT] Found TC No: {numbers[0]}")
+        
+        # IKN
+        if "İKN" in line_upper or "IKN" in line_upper:
+            # IKN genellikle sayı içerir
+            parts = line_clean.split(":")
+            if len(parts) > 1:
+                entry["Global_Info"]["IKN"] = parts[1].strip()
+                print(f"[TEXT] Found IKN: {parts[1].strip()}")
+        
+        # Yasak Kayıt No
+        if "YASAK" in line_upper and "KAYIT" in line_upper and "NO" in line_upper:
+            parts = line_clean.split(":")
+            if len(parts) > 1:
+                entry["Global_Info"]["Yasak_Kayit_No"] = parts[1].strip()
+                print(f"[TEXT] Found Yasak Kayit No: {parts[1].strip()}")
+    
+    # En azından firma adı bulunmuş mu kontrol et
+    if entry["Yasakli_Firma"]["Unvan"]:
+        return entry
+    
+    return None
 
 # ---------------------------------------------------------
 # 3. COMPUTER VISION & OCR (SAME AS BEFORE)
@@ -205,7 +282,50 @@ def get_sorted_rows(img):
 
 def process_single_page(img, page_num, reader):
     rows = get_sorted_rows(img)
-    if not rows: return None
+    
+    # FALLBACK: Eğer tablo bulunamazsa, tüm sayfayı OCR ile oku
+    if not rows:
+        print(f"[WARNING] Page {page_num}: No table detected, trying full-page OCR...")
+        try:
+            result = reader.readtext(img, detail=1, paragraph=True)
+            if result:
+                # Basit parsing: satır satır oku
+                full_text = "\n".join([text for (_, text, _) in result])
+                print(f"[OCR] Full page text ({len(full_text)} chars):\n{full_text[:500]}...")
+                
+                # En azından firma adını bulmaya çalış
+                lines = full_text.split("\n")
+                entry = {
+                    "Page": page_num,
+                    "Global_Info": {"Yasak_Kayit_No": None, "IKN": None, "Bakanlik": None, "Yasak_Suresi": None},
+                    "Idare": {"Unvan": None, "Adres": None},
+                    "Yasakli_Firma": {"Unvan": None, "Vergi_No": None, "TC_No": None, "Adres": None},
+                    "Ortaklar": [],
+                    "raw_ocr_text": full_text  # Debug için
+                }
+                
+                # Basit pattern matching
+                for i, line in enumerate(lines):
+                    line_upper = line.upper()
+                    if "FİRMA" in line_upper or "İHALECİ" in line_upper or "ŞİRKET" in line_upper:
+                        # Bir sonraki satır firma adı olabilir
+                        if i + 1 < len(lines):
+                            potential_name = lines[i + 1].strip()
+                            if len(potential_name) > 3:
+                                entry["Yasakli_Firma"]["Unvan"] = potential_name
+                                print(f"[EXTRACTED] Potential company name: {potential_name}")
+                    
+                    if "VERGİ" in line_upper and "NO" in line_upper:
+                        # Vergi no arama
+                        numbers = re.findall(r'\d{10,}', line)
+                        if numbers:
+                            entry["Yasakli_Firma"]["Vergi_No"] = numbers[0]
+                
+                return entry if entry["Yasakli_Firma"]["Unvan"] else None
+        except Exception as e:
+            print(f"[ERROR] Full-page OCR failed: {e}")
+            return None
+        return None
 
     entry = {
         "Page": page_num,
@@ -299,15 +419,37 @@ def scan_date_and_store(date_str: str, company_filter: Optional[str] = None, rea
     local_reader = reader or easyocr.Reader(["tr"], gpu=USE_GPU)
     stored_records = []
 
-    for page_num, img_cv in pdf_bytes_to_images(pdf_data, company_filter=company_filter):
+    for page_num, img_cv, text_raw in pdf_bytes_to_images(pdf_data, company_filter=company_filter):
         try:
-            data = process_single_page(img_cv, page_num, local_reader)
+            # Önce text layer'dan parse etmeyi dene
+            data = None
+            
+            # Text layer yeterince uzunsa (>200 karakter), direkt parse et
+            if len(text_raw) > 200:
+                print(f"[INFO] Page {page_num}: Trying text-based parsing first...")
+                data = parse_text_layer(text_raw, page_num)
+            
+            # Eğer text parsing başarısızsa, OCR'a geç
+            if not data or not (data.get("Yasakli_Firma", {}).get("Unvan")):
+                print(f"[INFO] Page {page_num}: Text parsing insufficient, trying OCR...")
+                data = process_single_page(img_cv, page_num, local_reader)
+            
             if data:
                 unvan = data.get("Yasakli_Firma", {}).get("Unvan")
                 yasak_no = data.get("Global_Info", {}).get("Yasak_Kayit_No")
                 print(f"[DEBUG] Page {page_num}: Unvan='{unvan}', Yasak_No='{yasak_no}'")
                 
                 if unvan or yasak_no:
+                    # Company filter check (post-OCR)
+                    if company_filter:
+                        filter_norm = normalize_tr(company_filter)
+                        unvan_norm = normalize_tr(unvan) if unvan else ""
+                        if filter_norm not in unvan_norm:
+                            print(f"[SKIP] Page {page_num}: Company '{unvan}' doesn't match filter '{company_filter}'")
+                            continue
+                        else:
+                            print(f"[MATCH] Page {page_num}: Company '{unvan}' matches filter!")
+                    
                     record = parse_entry_to_record(data, date_str, pdf_url, page_num)
                     inserted, rowid = upsert_ban(record)
                     if inserted:
@@ -318,9 +460,11 @@ def scan_date_and_store(date_str: str, company_filter: Optional[str] = None, rea
                 else:
                     print(f"[SKIP] Page {page_num}: No Unvan/Yasak_No found, skipping DB insert")
             else:
-                print(f"[SKIP] Page {page_num}: process_single_page returned None")
+                print(f"[SKIP] Page {page_num}: Both text and OCR parsing failed")
         except Exception as e:
             print(f"[ERROR] Page {page_num}: {e}")
+            import traceback
+            traceback.print_exc()
 
     return stored_records
 
@@ -379,7 +523,7 @@ def check_banned_status(
     if not force_scan:
         rows = query_bans(company_name or "", start_date, end_date)
         if rows:
-            return format_query_response(rows)
+            return format_query_response(rows, start_date, end_date)
 
     # 2) Canlı tarama ve DB'ye yazma
     reader = easyocr.Reader(["tr"], gpu=USE_GPU)
@@ -393,7 +537,7 @@ def check_banned_status(
         current += timedelta(days=1)
 
     rows = query_bans(company_name or "", start_date, end_date)
-    return format_query_response(rows)
+    return format_query_response(rows, start_date, end_date)
 
 if __name__ == "__main__":
     res = check_banned_status(TARGET_DATE)

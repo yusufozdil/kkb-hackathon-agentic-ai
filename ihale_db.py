@@ -228,12 +228,15 @@ def parse_entry_to_record(entry: Dict[str, Any], date_str: str, pdf_url: Optiona
     }
 
 
-def format_query_response(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
-    return {
+def format_query_response(rows: List[Dict[str, Any]], start_date: str = None, end_date: str = None) -> Dict[str, Any]:
+    result = {
         "found": len(rows) > 0,
         "count": len(rows),
         "records": rows,
     }
+    if start_date and end_date:
+        result["date_range_checked"] = f"{start_date} to {end_date}"
+    return result
 
 
 if __name__ == "__main__":
