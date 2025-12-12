@@ -1,12 +1,19 @@
-crewai
-langchain_community
-requests
-requests_toolbelt
-python-dotenv
-pymupdf
-opencv-python-headless
-numpy
-easyocr
-beautifulsoup4
-pillow
-feedparser
+# AI Orchestration
+crewai>=0.86.0
+langchain_community>=0.3.0
+
+# Web Scraping & HTTP
+requests>=2.32.0
+requests_toolbelt>=1.0.0
+beautifulsoup4>=4.12.0
+feedparser>=6.0.11
+
+# PDF & OCR
+pymupdf>=1.24.0
+easyocr>=1.7.0
+opencv-python-headless>=4.10.0
+pillow>=10.4.0
+numpy>=1.26.0
+
+# Configuration
+python-dotenv>=1.0.0

@@ -19,21 +19,27 @@ env/
 logs/
 .crewai/
 
-# Project Data
+# Project Data - PDF Cache
 data/pdf_cache/*.pdf
-data/captcha_debug/
+
+# SQLite temporary files
 *.db-journal
+*.db-wal
+*.db-shm
 
-# Output files
-yasak_*.json
-news_result.json
-ihale_result.json
+# Generated Reports (JSON & PDF outputs)
+reports/*.json
+reports/*.pdf
 
-# Temporary files
+# Temporary OCR files
 ocr_tmp/
-captcha.png
-captcha_*.png
+captcha*.png
 
-# Keep DB and structure
+# Documentation (optional - remove if you want to include docs/)
+docs/
+
+# Keep essential files
 !data/ihale_yasakli.db
 !data/pdf_cache/.gitkeep
+!reports/.gitkeep
+!.env.example

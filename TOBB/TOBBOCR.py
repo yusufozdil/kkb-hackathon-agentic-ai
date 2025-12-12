@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
-from pdf2image import convert_from_path
 import easyocr
 from rapidfuzz import fuzz
 import re
+import fitz  # PyMuPDF - cross-platform PDF handling (no poppler needed)
 
 
 def structured_parsing(text, header_list):
@@ -140,15 +140,36 @@ class TOBBOCR:
     # ---------------------------------------------------------
     def run(self, pdf_path, section_type, target_company):
         print(f"--- Scanning Document Stream: {pdf_path} ---")
-        pages = convert_from_path(pdf_path, dpi=self.dpi)
+        
+        # Open PDF with PyMuPDF (cross-platform, no poppler needed)
+        try:
+            doc = fitz.open(pdf_path)
+        except Exception as e:
+            raise Exception(f"Unable to get page count. Error: {e}")
         
         # Flatten columns
         column_stream = []
-        for idx, page in enumerate(pages):
-            img = cv2.cvtColor(np.array(page), cv2.COLOR_RGB2BGR)
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            # Render page to pixmap at specified DPI
+            zoom = self.dpi / 72  # 72 is default DPI
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat)
+            
+            # Convert pixmap to numpy array (RGB)
+            img_rgb = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
+            
+            # Convert RGB to BGR for OpenCV
+            if pix.n == 4:  # RGBA
+                img = cv2.cvtColor(img_rgb, cv2.COLOR_RGBA2BGR)
+            else:  # RGB
+                img = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
+            
             h, w, _ = img.shape
-            column_stream.append((img[:, 0:w//2], idx+1, "LEFT"))
-            column_stream.append((img[:, w//2:], idx+1, "RIGHT"))
+            column_stream.append((img[:, 0:w//2], page_num+1, "LEFT"))
+            column_stream.append((img[:, w//2:], page_num+1, "RIGHT"))
+        
+        doc.close()
 
         is_collecting = False
         buffer_text = []
