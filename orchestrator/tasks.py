@@ -21,7 +21,7 @@ class OrchestratorTasks:
                 "🔴 TOOL 3: Fetch News [REQUIRED - NEVER SKIP]\n"
                 "   ⚠️ YOU ABSOLUTELY MUST CALL THIS TOOL! THIS IS NOT OPTIONAL!\n"
                 "   - STRICT INPUT FORMAT:\n"
-                "     {\"company_name\": \"" + company_name + "\", \"start_date\": \"" + start_date + "\", \"end_date\": \"" + end_date + "\", \"limit\": 50}\n"
+                "     {\"company_name\": \"" + company_name + "\", \"start_date\": \"" + start_date + "\", \"end_date\": \"" + end_date + "\", \"limit\": 100}\n"
                 "   - Dates must be YYYYMMDD (8 digits) - use EXACTLY: start_date=\"" + start_date + "\", end_date=\"" + end_date + "\"\n"
                 "   - NEVER change the provided dates; do not invent other dates.\n"
                 "   - Even if banned list or registry is empty, YOU MUST STILL FETCH NEWS!\n"
@@ -40,17 +40,64 @@ class OrchestratorTasks:
                 "Compile all raw findings into a structured summary for the analyst. YOU MUST mention which tools were called and their results."
             ),
             agent=agent,
-            expected_output="A detailed summary of raw data from all three sources. MUST include news data."
+            expected_output=(
+                "A comprehensive and detailed summary of raw data from all three sources. MUST include:\n"
+                "- Complete findings from Banned List check with all details\n"
+                "- All available Trade Registry information (or note if unavailable)\n"
+                "- Detailed news analysis with FULL DETAILS:\n"
+                "  * Each news title (in Turkish)\n"
+                "  * Publication date\n"
+                "  * Full URL/link for each news article\n"
+                "  * Source name\n"
+                "  * Brief summary of content\n"
+                "- Any patterns, trends, or notable findings\n"
+                "⚠️ CRITICAL: Pass ALL news article URLs to the analyst for inclusion in the sources field."
+            )
         )
 
     def reporting_task(self, agent, company_name):
         return Task(
             description=(
                 f"Analyze the raw data collected for '{company_name}'. "
-                "Write a final risk assessment report.\n"
+                "Write a comprehensive, detailed, and professional financial risk assessment report.\n\n"
+                "📋 RAPOR İÇERİĞİ GEREKLİLİKLERİ (Minimum 1000 kelime hedefle):\n\n"
+                "1. YÖNETİCİ ÖZETİ (2-3 paragraf):\n"
+                "   - Genel risk değerlendirmesi\n"
+                "   - Ana bulgular ve öneriler\n"
+                "   - Kritik risk faktörleri varsa vurgula\n\n"
+                "2. ŞİRKET HAKKINDA GENEL BİLGİLER:\n"
+                "   - Ticaret sicili bilgileri (mevcutsa)\n"
+                "   - Faaliyet alanı ve sektör\n"
+                "   - Tespit edilen diğer bilgiler\n\n"
+                "3. YASAKLI LİSTE ANALİZİ:\n"
+                "   - Resmi Gazete taraması sonuçları\n"
+                "   - Herhangi bir yasak varsa detayları (tarih, neden, süre)\n"
+                "   - Yasak yoksa açıkça belirt\n\n"
+                "4. HABER ANALİZİ VE MEDYA İZLEMESİ:\n"
+                "   - Toplanan haber sayısı ve tarih aralığı\n"
+                "   - Önemli haber başlıkları ve içerikleri\n"
+                "   - Pozitif/negatif haber dengesi\n"
+                "   - Tespit edilen trendler ve paternler\n"
+                "   - Medyada yer alan konular (finansal, hukuki, operasyonel vb.)\n\n"
+                "5. RİSK DEĞERLENDİRMESİ:\n"
+                "   - Finansal riskler\n"
+                "   - Yasal riskler\n"
+                "   - İtibar riskleri\n"
+                "   - Operasyonel riskler\n"
+                "   - Her risk kategorisi için detaylı açıklama\n\n"
+                "6. SONUÇ VE ÖNERİLER:\n"
+                "   - Genel değerlendirme\n"
+                "   - Yatırım/işbirliği önerileri\n"
+                "   - İzlenmesi gereken konular\n\n"
                 "You must explicitly set 'is_banned' to True if the company was found in the Banned List, otherwise False.\n"
                 "If 'is_banned' is True, highlight it as a CRITICAL RISK in the report text.\n"
-                "Ensure the 'report_text' is in professional Turkish.\n\n"
+                "Ensure the 'report_text' is in professional Turkish with detailed analysis.\n\n"
+                "⚠️ YAZIM KURALLARI:\n"
+                "- ASLA teknik değişken isimleri kullanma (örn: 'found: False', 'count: 0', 'status: SUCCESS')\n"
+                "- Bulgulari doğal Türkçe ile ifade et: 'şirket yasaklı listede yer almamaktadır' yerine 'yasak kaydına rastlanmamıştır'\n"
+                "- Tüm haber başlıkları ve içerikleri Türkçe olarak yaz (İngilizce başlık kullanma)\n"
+                "- Haber kaynaklarında URL linklerini belirt\n"
+                "- Tarih formatı: 8 Aralık 2025 (08 Aralık değil)\n\n"
                 "⚠️ MANDATORY DATA VALIDATION:\n"
                 "   - You MUST have received NEWS data from the research agent.\n"
                 "   - If news data is missing, the report is INCOMPLETE and you must indicate this in status.\n"
@@ -74,16 +121,27 @@ class OrchestratorTasks:
                 "REQUIRED FIELDS (exactly 5):\n"
                 '1. "report_text": string (Turkish, plain text, no markdown)\n'
                 '2. "is_banned": boolean (true/false)\n'
-                '3. "confidence_score": integer (0-100)\n'
-                '4. "sources": array of strings\n'
+                '3. "confidence_score": integer (15-92, KURALLARA UYGUN)\n'
+                '4. "sources": array of strings - TÜM haber linklerini içermeli ["gazette", "https://..."]\n'
                 '5. "status": string ("SUCCESS" or "ERROR")\n\n'
-                "Consistency rule: If report_text implies medium/high risk, confidence_score must NOT be high (cap at 60). "
-                "If report_text implies low risk, confidence_score should be 70-90.\n\n"
+                "⚠️ GÜVEN SKORU KURALLARI (SIKI TAKİP ET):\n"
+                "- Yasaklı listede ise: confidence_score = 15-25 (çok düşük güven)\n"
+                "- Yasaklı değil + negatif haberler varsa: 35-50\n"
+                "- Yasaklı değil + karışık (pozitif/negatif) haberler: 55-70\n"
+                "- Yasaklı değil + çoğunlukla pozitif haberler: 70-85\n"
+                "- Yasaklı değil + tamamen pozitif haberler + güçlü performans: 85-92\n"
+                "- Hiçbir zaman 95+ kullanma (belirsizlikler her zaman vardır)\n\n"
                 "EXAMPLE CORRECT OUTPUT (copy this format exactly, no backticks):\n"
                 '{"report_text": "Şirket analizi: Düşük risk profili görülmektedir.", "is_banned": false, "confidence_score": 80, "sources": ["news", "gazette"], "status": "SUCCESS"}\n\n'
                 "REMEMBER: Return raw JSON only. Any backticks or markdown will cause system failure."
             ),
             agent=agent,
             output_pydantic=RiskReport,
-            expected_output="A structured RiskReport object."
+            expected_output=(
+                "A comprehensive RiskReport object with:\n"
+                "- report_text: Detailed Turkish risk analysis (minimum 1000 words)\n"
+                "- Covering all sections: Executive Summary, Company Info, Banned List, News Analysis, Risk Assessment, Conclusions\n"
+                "- Professional tone with specific examples and data points\n"
+                "- All required fields properly set"
+            )
         )

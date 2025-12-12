@@ -21,6 +21,7 @@ logs/
 
 # Project Data - PDF Cache
 data/pdf_cache/*.pdf
+data/*.pdf
 
 # SQLite temporary files
 *.db-journal

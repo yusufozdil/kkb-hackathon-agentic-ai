@@ -14,18 +14,76 @@ import os
 def register_turkish_font():
     """
     Türkçe karakter desteği için font kaydı.
-    Windows'ta varsayılan Arial kullanır.
+    macOS, Windows ve Linux sistemlerde çalışır.
     """
+    import platform
+    system = platform.system()
+    
     try:
-        # Windows Arial font
-        font_path = "C:\\Windows\\Fonts\\arial.ttf"
-        if os.path.exists(font_path):
-            pdfmetrics.registerFont(TTFont('Arial', font_path))
-            pdfmetrics.registerFont(TTFont('Arial-Bold', "C:\\Windows\\Fonts\\arialbd.ttf"))
-            return 'Arial'
-    except:
-        pass
-    return 'Helvetica'  # Fallback
+        if system == 'Darwin':  # macOS
+            # macOS sistem fontları
+            font_paths = [
+                '/System/Library/Fonts/Supplemental/Arial.ttf',
+                '/Library/Fonts/Arial.ttf',
+                '/System/Library/Fonts/Helvetica.ttc',
+            ]
+            bold_paths = [
+                '/System/Library/Fonts/Supplemental/Arial Bold.ttf',
+                '/Library/Fonts/Arial Bold.ttf',
+            ]
+            
+            for font_path in font_paths:
+                if os.path.exists(font_path):
+                    try:
+                        pdfmetrics.registerFont(TTFont('TurkishFont', font_path))
+                        # Bold font
+                        for bold_path in bold_paths:
+                            if os.path.exists(bold_path):
+                                pdfmetrics.registerFont(TTFont('TurkishFont-Bold', bold_path))
+                                break
+                        else:
+                            pdfmetrics.registerFont(TTFont('TurkishFont-Bold', font_path))
+                        return 'TurkishFont'
+                    except:
+                        continue
+                        
+        elif system == 'Windows':
+            # Windows Arial font
+            font_path = "C:\\Windows\\Fonts\\arial.ttf"
+            bold_path = "C:\\Windows\\Fonts\\arialbd.ttf"
+            if os.path.exists(font_path):
+                pdfmetrics.registerFont(TTFont('TurkishFont', font_path))
+                if os.path.exists(bold_path):
+                    pdfmetrics.registerFont(TTFont('TurkishFont-Bold', bold_path))
+                else:
+                    pdfmetrics.registerFont(TTFont('TurkishFont-Bold', font_path))
+                return 'TurkishFont'
+                
+        elif system == 'Linux':
+            # Linux fontları
+            font_paths = [
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+            ]
+            bold_paths = [
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+            ]
+            
+            for i, font_path in enumerate(font_paths):
+                if os.path.exists(font_path):
+                    pdfmetrics.registerFont(TTFont('TurkishFont', font_path))
+                    if i < len(bold_paths) and os.path.exists(bold_paths[i]):
+                        pdfmetrics.registerFont(TTFont('TurkishFont-Bold', bold_paths[i]))
+                    else:
+                        pdfmetrics.registerFont(TTFont('TurkishFont-Bold', font_path))
+                    return 'TurkishFont'
+                    
+    except Exception as e:
+        print(f"Font kaydı hatası: {e}")
+    
+    # Fallback: Helvetica (Türkçe karakter desteği sınırlı)
+    return 'Helvetica'
 
 
 def json_to_pdf(json_data, output_path, company_name, start_date, end_date):
@@ -64,7 +122,7 @@ def json_to_pdf(json_data, output_path, company_name, start_date, end_date):
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
-        fontName=f'{font_family}-Bold' if font_family == 'Arial' else 'Helvetica-Bold',
+        fontName=f'{font_family}-Bold' if font_family == 'TurkishFont' else 'Helvetica-Bold',
         fontSize=18,
         textColor=colors.HexColor('#1a1a1a'),
         spaceAfter=12,
@@ -74,7 +132,7 @@ def json_to_pdf(json_data, output_path, company_name, start_date, end_date):
     heading_style = ParagraphStyle(
         'CustomHeading',
         parent=styles['Heading2'],
-        fontName=f'{font_family}-Bold' if font_family == 'Arial' else 'Helvetica-Bold',
+        fontName=f'{font_family}-Bold' if font_family == 'TurkishFont' else 'Helvetica-Bold',
         fontSize=14,
         textColor=colors.HexColor('#2c3e50'),
         spaceAfter=10,
@@ -84,7 +142,7 @@ def json_to_pdf(json_data, output_path, company_name, start_date, end_date):
     body_style = ParagraphStyle(
         'CustomBody',
         parent=styles['BodyText'],
-        fontName=font_family if font_family == 'Arial' else 'Helvetica',
+        fontName=font_family if font_family == 'TurkishFont' else 'Helvetica',
         fontSize=11,
         textColor=colors.HexColor('#333333'),
         alignment=TA_JUSTIFY,
@@ -123,8 +181,8 @@ def json_to_pdf(json_data, output_path, company_name, start_date, end_date):
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#2c3e50')),
         ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
         ('ALIGN', (1, 0), (1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (0, -1), f'{font_family}-Bold' if font_family == 'Arial' else 'Helvetica-Bold'),
-        ('FONTNAME', (1, 0), (1, -1), font_family if font_family == 'Arial' else 'Helvetica'),
+        ('FONTNAME', (0, 0), (0, -1), f'{font_family}-Bold' if font_family == 'TurkishFont' else 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), font_family if font_family == 'TurkishFont' else 'Helvetica'),
         ('FONTSIZE', (0, 0), (-1, -1), 11),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -159,8 +217,8 @@ def json_to_pdf(json_data, output_path, company_name, start_date, end_date):
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#2c3e50')),
         ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
         ('ALIGN', (1, 0), (1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (0, -1), f'{font_family}-Bold' if font_family == 'Arial' else 'Helvetica-Bold'),
-        ('FONTNAME', (1, 0), (1, -1), f'{font_family}-Bold' if font_family == 'Arial' else 'Helvetica-Bold'),
+        ('FONTNAME', (0, 0), (0, -1), f'{font_family}-Bold' if font_family == 'TurkishFont' else 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), f'{font_family}-Bold' if font_family == 'TurkishFont' else 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 11),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -189,15 +247,24 @@ def json_to_pdf(json_data, output_path, company_name, start_date, end_date):
     sources = data.get("sources", [])
     if sources:
         story.append(Paragraph("Kullanılan Kaynaklar", heading_style))
-        sources_text = ", ".join(sources)
-        story.append(Paragraph(sources_text, body_style))
+        
+        # Kaynakları listele - URL'leri ayır
+        for i, source in enumerate(sources, 1):
+            if source.startswith('http'):
+                # URL ise kısalt ve tıklanabilir yap
+                display_text = source if len(source) <= 80 else source[:77] + "..."
+                source_para = Paragraph(f"{i}. <link href='{source}'>{display_text}</link>", body_style)
+            else:
+                # Normal kaynak (örn: 'gazette', 'news')
+                source_para = Paragraph(f"{i}. {source.title()}", body_style)
+            story.append(source_para)
     
     # Footer
     story.append(Spacer(1, 1*cm))
     footer_style = ParagraphStyle(
         'Footer',
         parent=styles['Normal'],
-        fontName=font_family if font_family == 'Arial' else 'Helvetica',
+        fontName=font_family if font_family == 'TurkishFont' else 'Helvetica',
         fontSize=9,
         textColor=colors.grey,
         alignment=TA_CENTER

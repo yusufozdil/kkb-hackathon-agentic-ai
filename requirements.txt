@@ -1,6 +1,8 @@
 crewai
 langchain_community
+langchain-openai
 litellm
+openai>=2.0.0
 requests
 requests_toolbelt
 python-dotenv

@@ -13,7 +13,7 @@
 ## 📋 Gereksinimler
 
 - Python 3.12+
-- Ollama (gemma3:4b modeli)
+- KKB Kloudeks API Key (hackathon tarafından sağlanmıştır)
 - TOBB hesabı (opsiyonel, ticaret sicili için)
 
 ## 🚀 Kurulum
@@ -31,18 +31,35 @@ cd kkb-hackathon-agentic-ai
 pip install -r requirements.txt
 ```
 
-### 3. Ollama Kurulumu
+### 3. API Key Konfigürasyonu
 
-[Ollama'yı indir](https://ollama.ai) ve modeli çek:
+ENV_TEMPLATE dosyasını kopyalayıp .env dosyası oluşturun:
 
 ```bash
-ollama pull gemma3:4b
-ollama serve
+cp ENV_TEMPLATE .env
 ```
 
-### 4. Ortam Değişkenleri (Opsiyonel)
+Sonra .env dosyasını düzenleyip API key'inizi ekleyin:
 
-TOBB entegrasyonu için `.env` dosyası oluştur:
+```bash
+# .env dosyası
+KKB_API_KEY=sk-your-actual-api-key-here  # Buraya gerçek key'inizi yazın
+KKB_BASE_URL=https://mia.csp.kloudeks.com/v1
+KKB_MODEL=gpt-oss-120b
+KKB_EMBEDDING_MODEL=qwen3-embedding-8b
+```
+
+### 4. API Bağlantısını Test Edin
+
+```bash
+python test_kloudeks_api.py
+```
+
+Bu komut API bağlantısını test edecek ve kullanılabilir modelleri gösterecektir.
+
+### 5. Ortam Değişkenleri (Opsiyonel)
+
+TOBB entegrasyonu için `.env` dosyasına ekleyin:
 
 ```bash
 TTS_EMAIL=your_email@example.com
@@ -87,7 +104,8 @@ python main.py --company "ACME Teknoloji" --start 20241101 --end 20241130
 ## 🔧 Teknolojiler
 
 - **AI Framework**: CrewAI, LangChain
-- **LLM**: Ollama (Gemma 3 4B)
+- **LLM**: KKB Kloudeks API (gpt-oss-120b)
+- **Embeddings**: Qwen3 Embedding (8B)
 - **OCR**: EasyOCR, OpenCV
 - **PDF**: PyMuPDF
 - **Web**: Streamlit
@@ -134,4 +152,4 @@ KKB Hackathon - Agentic AI Team
 
 ---
 
-**⚡ Powered by CrewAI, Ollama & Streamlit**
+**⚡ Powered by CrewAI, KKB Kloudeks API & Streamlit**
