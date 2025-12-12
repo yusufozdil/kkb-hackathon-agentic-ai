@@ -1,6 +1,8 @@
 import argparse
 import sys
 import json
+import os
+from datetime import datetime
 from crewai import Crew, Process
 from orchestrator.agents import OrchestratorAgents
 from orchestrator.tasks import OrchestratorTasks
@@ -50,17 +52,33 @@ if __name__ == "__main__":
         final_output = run_orchestrator(args.company, args.start, args.end)
         print("\n\n######################## FINAL REPORT ########################\n")
         
-        if isinstance(final_output, dict):
-            print(json.dumps(final_output, indent=2, ensure_ascii=False))
-            print("Valid JSON Output")
+        # Convert Pydantic model to JSON
+        if hasattr(final_output, 'model_dump_json'):
+            # Pydantic v2
+            json_output = final_output.model_dump_json(indent=2)
+        elif hasattr(final_output, 'json'):
+            # Pydantic v1
+            json_output = final_output.json(indent=2)
         else:
-            print(final_output)
-            try:
-                json.loads(final_output)
-                print("Valid JSON Output")
-            except Exception:
-                print("Output is not pure JSON (LLM might have added text).")
+            # Fallback to string representation
+            json_output = str(final_output)
+        
+        # Print to console
+        print(json_output)
+        print("\n✅ Valid JSON Output")
+        
+        # Save to file
+        os.makedirs("reports", exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"reports/{args.company}_{args.start}_{args.end}_{timestamp}.json"
+        
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(json_output)
+        
+        print(f"📄 Rapor kaydedildi: {filename}")
 
     except Exception as e:
-        print(f"Execution Failed: {e}")
+        print(f"❌ Execution Failed: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)

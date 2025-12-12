@@ -1,6 +1,10 @@
 import os
 from datetime import datetime
 from typing import Dict, Any, List, Optional
+from dotenv import load_dotenv
+
+# Load environment variables (for TOBB cookies)
+load_dotenv()
 
 from TOBB.TicaretScraper import TicaretScraper
 from TOBB.TTSClient import TTSClient
@@ -13,14 +17,26 @@ def _format_ddmmyyyy(date_str: str) -> str:
 
 
 def search_company(company_name: str, mudurluk_file: str) -> List[Dict[str, Any]]:
-    scraper = TicaretScraper(company_name, mudurluk_file=mudurluk_file)
+    scraper = TicaretScraper(company_name, mudurluk_file=mudurluk_file)    
     return scraper.get_results() or []
 
 
 def fetch_ilan_ocr(mudurluk_id: str, sicil_no: str, start_date: str, end_date: str, email: str, password: str) -> Dict[str, Any]:
-    client = TTSClient(email=email, password=password)
+    # 🔓 Load manual cookies from environment (CAPTCHA bypass)
+    manual_cookies = {}
+    cookie1 = os.getenv("TOBB_COOKIE_1")  # atrsrv-101041123
+    cookie2 = os.getenv("TOBB_COOKIE_2")  # atrsrv-101041124
     
-    # CRITICAL: Login first!
+    if cookie1:
+        manual_cookies["atrsrv-101041123"] = cookie1  # TOBB session cookie
+        print(f"[TOBB] Loaded atrsrv-101041123: {cookie1[:20]}...")
+    if cookie2:
+        manual_cookies["atrsrv-101041124"] = cookie2  # TOBB session cookie
+        print(f"[TOBB] Loaded atrsrv-101041124: {cookie2[:20]}...")
+    
+    client = TTSClient(email=email, password=password, manual_cookies=manual_cookies if manual_cookies else None)
+    
+    # CRITICAL: Login first! (will use manual cookies if available)
     print("[TOBB] Attempting login...")
     if not client.login():
         print("[TOBB] Login failed!")
@@ -64,9 +80,17 @@ def fetch_trade_registry(company_name: str, start_date: str, end_date: str) -> D
     if ilan_data.get("status") != "success":
         return ilan_data
 
+    # 🎯 PERFORMANCE: Limit ilanlar to prevent LLM timeout (max 10 for demo)
+    ilanlar = ilan_data["data"]
+    if len(ilanlar) > 10:
+        print(f"[TOBB] ⚠️ {len(ilanlar)} ilan bulundu, ilk 10'u kullanılıyor (LLM timeout engellemek için)")
+        ilanlar = ilanlar[:10]
+    
     return {
         "status": "success",
         "search_result": first,
-        "ilanlar": ilan_data["data"],
+        "ilanlar": ilanlar,
+        "total_found": len(ilan_data["data"]),  # Orijinal sayı
+        "returned": len(ilanlar),  # Döndürülen sayı
     }
 

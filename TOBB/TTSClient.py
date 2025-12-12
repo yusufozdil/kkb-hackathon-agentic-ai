@@ -31,9 +31,10 @@ class TTSClient:
     ILAN_PAGE_URL = BASE + "/view/hizlierisim/ilangoruntuleme.php"
     ILAN_POST_URL = BASE + "/view/hizlierisim/ilangoruntuleme_ok.php"
 
-    def __init__(self, email, password, ocr_reader=None):
+    def __init__(self, email, password, ocr_reader=None, manual_cookies=None):
         self.email = email
         self.password = password
+        self.manual_cookies = manual_cookies  # Dict of cookie_name: cookie_value
         self.session = requests.Session()
         # Higher UA for login reliability
         self.session.headers.update({
@@ -93,6 +94,30 @@ class TTSClient:
         return sorted(candidates, key=len, reverse=True)[0]
 
     def login(self, retries=12, wait_seconds=2.0):
+        # 🔓 BYPASS: Try manual cookies first
+        if self.manual_cookies:
+            print("[COOKIE BYPASS] Using manual session cookies, skipping CAPTCHA")
+            for cookie_name, cookie_value in self.manual_cookies.items():
+                self.session.cookies.set(cookie_name, cookie_value, domain='www.ticaretsicil.gov.tr', path='/')
+                print(f"[COOKIE] Set {cookie_name}={cookie_value[:20]}...")
+            
+            # Test if cookies work
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Referer": self.INDEX_URL
+            }
+            test_response = self.session.get(self.ILAN_PAGE_URL, headers=headers)
+            print(f"[COOKIE TEST] Status={test_response.status_code}, Length={len(test_response.content)}")
+            
+            # If response is valid (not redirect, has content), cookies work
+            if test_response.status_code == 200 and len(test_response.content) > 5000:
+                print("[COOKIE BYPASS] ✅ Manual cookies are VALID! Skipping CAPTCHA entirely.")
+                return True
+            else:
+                print("[COOKIE BYPASS] ⚠️ Manual cookies EXPIRED or INVALID. Falling back to CAPTCHA login...")
+        
+        # Normal CAPTCHA flow
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "*/*",
@@ -149,72 +174,89 @@ class TTSClient:
         return False
 
     def fetch_ilanlar(self, mudurluk_id, ticaret_unvani="", sicil_no="", tarih1="", tarih2=""):
+        """
+        Fetch ilanlar from TOBB using the correct endpoint and parameters.
+        Site returns all results in a single request (no pagination needed).
+        """
         headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
             "Accept": "*/*",
-            "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept-Language": "tr,en-US;q=0.9,en;q=0.8",
             "X-Requested-With": "XMLHttpRequest",
             "Origin": self.BASE,
-            "Referer": self.ILAN_PAGE_URL
+            "Referer": self.ILAN_PAGE_URL,
+            "Connection": "keep-alive",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin"
         }
         
         print(f"[ILAN] Starting fetch with cookies: {dict(self.session.cookies)}")
 
-        length = 10
-        start = 0
-        draw = 1
+        # Simple form parameters - no draw/start/length needed
+        fields_dict = {
+            "SicilMudurluguId": str(mudurluk_id),
+            "TicSicNo": sicil_no if sicil_no else "",
+            "TicaretUnvani": ticaret_unvani if ticaret_unvani else "",
+            "Tarih1": tarih1 if tarih1 else "",
+            "Tarih2": tarih2 if tarih2 else ""
+        }
+        
+        print(f"[ILAN][POST] URL: {self.ILAN_POST_URL}")
+        print(f"[ILAN][POST] fields: {fields_dict}")
+        
+        form = MultipartEncoder(fields=fields_dict)
+        headers["Content-Type"] = form.content_type
+        
+        r = self.session.post(self.ILAN_POST_URL, headers=headers, data=form, timeout=30)
+        print(f"[ILAN][POST] status={r.status_code} content-length={len(r.text)} content-type={r.headers.get('Content-Type', 'N/A')}")
+        
+        # Parse response
+        soup = BeautifulSoup(r.text, "html.parser")
+        table = soup.find("table", id="tblIlanGoruntuleme")
+        
+        if table is None:
+            snippet = r.text[:2000].replace("\n", " ")
+            print(f"[WARN] Table not found; HTML snippet (first 2000 chars): {snippet}")
+            
+            # Check if response looks like full HTML page (indicates session/auth issue)
+            if "<!DOCTYPE" in r.text or "<html" in r.text:
+                print(f"[WARN] Response appears to be full HTML page, not table data. Possible session issue.")
+                
+            return {"status": "Login Problem or No Data", "data": [], "html_snippet": snippet}
+
+        tbody = table.find("tbody")
+        if tbody is None:
+            print(f"[WARN] tbody not found in table")
+            return {"status": "No Data", "data": []}
+            
+        rows = tbody.find_all("tr")
+        print(f"[ILAN] Found {len(rows)} rows in table")
+        
+        if not rows:
+            return {"status": "No Data", "data": []}
+
         all_records = []
+        for row in rows:
+            cols = [td.get_text(strip=True) for td in row.find_all("td")]
+            if len(cols) < 7:  # Skip malformed rows
+                continue
+                
+            pdf_a = row.find("a", href=True)
+            pdf = pdf_a["href"] if pdf_a else None
+            
+            all_records.append({
+                "Mudurluk": cols[0],
+                "SicilNo": cols[1],
+                "Unvan": cols[2],
+                "YayinTarihi": cols[3],
+                "Sayi": cols[4],
+                "Sayfa": cols[5],
+                "IlanTuru": cols[6],
+                "PDF": pdf
+            })
 
-        while True:
-            fields_dict = {
-                "draw": str(draw),
-                "start": str(start),
-                "length": str(length),
-                "SicilMudurluguId": str(mudurluk_id),
-                "TicSicNo": sicil_no,
-                "TicaretUnvani": ticaret_unvani,
-                "Tarih1": tarih1,
-                "Tarih2": tarih2
-            }
-            print(f"[ILAN][POST] fields: {fields_dict}")
-            form = MultipartEncoder(fields=fields_dict)
-            headers["Content-Type"] = form.content_type
-            r = self.session.post(self.ILAN_POST_URL, headers=headers, data=form)
-            print(f"[ILAN][POST] status={r.status_code} content-length={len(r.text)} content-type={r.headers.get('Content-Type', 'N/A')}")
-            soup = BeautifulSoup(r.text, "html.parser")
-            table = soup.find("table", id="tblIlanGoruntuleme")
-            if table is None:
-                snippet = r.text[:2000].replace("\n", " ")
-                print(f"[WARN] Table not found; HTML snippet (first 2000 chars): {snippet}")
-                # Check if response looks like full HTML page (indicates session/auth issue)
-                if "<!DOCTYPE" in r.text or "<html" in r.text:
-                    print(f"[WARN] Response appears to be full HTML page, not table data. Possible session issue.")
-                return {"status": "Login Problem or No Data", "data": [], "html_snippet": snippet}
-
-            rows = table.find("tbody").find_all("tr")
-            if not rows:
-                break
-
-            for row in rows:
-                cols = [td.get_text(strip=True) for td in row.find_all("td")]
-                pdf_a = row.find("a", href=True)
-                pdf = pdf_a["href"] if pdf_a else None
-                all_records.append({
-                    "Mudurluk": cols[0],
-                    "SicilNo": cols[1],
-                    "Unvan": cols[2],
-                    "YayinTarihi": cols[3],
-                    "Sayi": cols[4],
-                    "Sayfa": cols[5],
-                    "IlanTuru": cols[6],
-                    "PDF": pdf
-                })
-
-            if len(rows) < length:
-                break
-            start += length
-            draw += 1
-
+        print(f"[ILAN] Successfully extracted {len(all_records)} records")
         return {"status": "success", "data": all_records}
 
     def fetch_pdf(self, first_url):

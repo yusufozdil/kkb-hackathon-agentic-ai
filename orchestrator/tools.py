@@ -28,7 +28,14 @@ except Exception as e:
 
 def _coerce_str(val: Any) -> str:
     if isinstance(val, dict):
-        if "value" in val:
+        # LLM sometimes sends schema dict like {"description": "...", "type": "..."}
+        if "description" in val and "type" in val:
+            # This is a schema, try to extract actual value
+            desc = val.get("description")
+            if desc and desc != "None" and not desc.startswith("{"):
+                return str(desc)
+            return ""
+        elif "value" in val:
             val = val.get("value")
         else:
             val = ""
@@ -51,6 +58,13 @@ def _coerce_bool(val: Any) -> bool:
 
 def _coerce_int(val: Any) -> int:
     if isinstance(val, dict):
+        # LLM schema dict fix
+        if "description" in val and "type" in val:
+            desc = val.get("description")
+            try:
+                return int(desc) if desc and desc != "None" else 50
+            except:
+                return 50
         val = val.get("value") if "value" in val else 0
     try:
         return int(val)
