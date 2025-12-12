@@ -28,7 +28,16 @@ def run_orchestrator(company_name, start_date, end_date):
     )
 
     result = crew.kickoff()
-    return result
+    
+    # Convert CrewOutput to proper format
+    if hasattr(result, 'pydantic'):
+        return result.pydantic.model_dump()
+    elif hasattr(result, 'json_dict'):
+        return result.json_dict
+    elif hasattr(result, 'raw'):
+        return result.raw
+    else:
+        return str(result)
 
 
 if __name__ == "__main__":
