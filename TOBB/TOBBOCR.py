@@ -52,12 +52,11 @@ class TOBBOCR:
                     line_text = " ".join([w["value"].replace(" ", "") for w in line["words"]])
                     all_text.append(line_text)
         plain_text = "\n".join(all_text)
-        print(plain_text)
         return re.sub(r'\s{2,}', ' ', plain_text).strip()
 
 
 
-    def run(self, pdf_path, section_type, target_company):
+    def run(self, pdf_path,  target_company, target_mudurluk=None):
         print(f"--- Scanning Document Stream: {pdf_path} ---")
         pages = convert_from_path(pdf_path, dpi=self.dpi)
         column_stream = []
@@ -70,27 +69,31 @@ class TOBBOCR:
         is_collecting = False
         buffer_text = []
         STOP_PATTERN = re.compile(r'\(\d{8}\)|İLAN SIRA NO', re.IGNORECASE)
-
         found_results = []
 
         for col_img, page_num, col_name in column_stream:
             raw_text = self.ocr_column(col_img)
-            # Split OCR text into lines for more accurate stopping
             lines = [line.strip() for line in raw_text.split("\n") if line.strip()]
 
             for line in lines:
                 line_up = self.tr_upper(line)
 
+                # Fuzzy match Mudurluk if provided
+                if not is_collecting and target_mudurluk:
+                    if fuzz.partial_ratio(self.tr_upper(target_mudurluk), line_up) > 80:
+                        print(f"🟢 Mudurluk Match Found: {line} (Page {page_num}, {col_name})")
+                        is_collecting = True
+                        continue
+
+                # Fuzzy match company name
                 if not is_collecting:
-                    # Start collecting when target company is found
                     if fuzz.partial_ratio(self.tr_upper(target_company), line_up) > 85:
-                        print(f"Match Found on Page {page_num} ({col_name}): {line}")
+                        print(f"🟢 Company Match Found: {line} (Page {page_num}, {col_name})")
                         is_collecting = True
 
                 if is_collecting:
                     match = STOP_PATTERN.search(line)
                     if match:
-                        # Stop detected
                         buffer_text.append(line[:match.start()].strip())
                         full_text = " ".join(buffer_text).strip()
                         if full_text:
@@ -101,7 +104,12 @@ class TOBBOCR:
                         continue
                     buffer_text.append(line)
 
-
+        # Catch any remaining text
+        if is_collecting and buffer_text:
+            full_text = " ".join(buffer_text).strip()
+            if full_text:
+                found_results.append(full_text)
+                print("   -> End of Document reached.")
 
         return found_results
 
