@@ -1,0 +1,15 @@
+crewai
+langchain_community
+litellm
+requests
+requests_toolbelt
+python-dotenv
+pymupdf
+opencv-python-headless
+numpy
+easyocr
+beautifulsoup4
+pillow
+feedparser
+streamlit
+reportlab

@@ -8,6 +8,23 @@ import easyocr
 import json
 import os
 import re
+import ssl
+from datetime import datetime, timedelta
+from typing import Optional, List, Dict
+
+from ihale_db import (
+    ensure_db,
+    upsert_ban,
+    parse_entry_to_record,
+    query_bans,
+    format_query_response,
+    normalize_tr,
+    DB_PATH,
+)
+
+# GLOBAL SSL BYPASS FOR EASYOCR MODEL DOWNLOAD
+# This fixes the "CERTIFICATE_VERIFY_FAILED" error in urllib/easyocr
+ssl._create_default_https_context = ssl._create_unverified_context
 
 # ---------------------------------------------------------
 # CONFIGURATION
@@ -15,6 +32,7 @@ import re
 TARGET_DATE = "20251129"  # YYYYMMDD
 OUTPUT_JSON = f"yasak_{TARGET_DATE}.json"
 USE_GPU = True
+PDF_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "pdf_cache")
 
 # ---------------------------------------------------------
 # 1. NETWORK (TLS FIX)
@@ -24,6 +42,8 @@ CIPHERS = "ECDHE+AESGCM:ECDHE+CHACHA20:ECDHE+AES256:!aNULL:!eNULL:!EXPORT:!DES:!
 class TLSAdapter(HTTPAdapter):
     def init_poolmanager(self, *args, **kwargs):
         ctx = create_urllib3_context(ciphers=CIPHERS)
+        ctx.check_hostname = False       # Önce hostname kontrolünü kapat
+        ctx.verify_mode = ssl.CERT_NONE  # Sonra sertifika doğrulamasını kapat
         kwargs["ssl_context"] = ctx
         return super().init_poolmanager(*args, **kwargs)
 
@@ -32,42 +52,65 @@ def get_pdf_url(date_str):
     month = date_str[4:6]
     return f"https://www.resmigazete.gov.tr/eskiler/{year}/{month}/{date_str}.pdf"
 
+import warnings
+from urllib3.exceptions import InsecureRequestWarning
+
+# Suppress only the single warning from urllib3 needed.
+warnings.simplefilter('ignore', InsecureRequestWarning)
+
 def download_pdf_to_memory(url):
-    print(f"⬇️ Downloading: {url}")
+    print(f"Downloading: {url}")
     session = requests.Session()
     session.mount("https://", TLSAdapter())
-    session.headers.update({"User-Agent": "Mozilla/5.0"})
+    session.mount("https://", TLSAdapter())
+    
+    # Full Browser Headers to look legit
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1"
+    }
+    session.headers.update(headers)
+    
     try:
-        r = session.get(url, timeout=60, stream=True)
+        # verify=False is often needed for gov.tr sites with legacy certs
+        r = session.get(url, timeout=60, stream=True, verify=False)
         r.raise_for_status()
+        print(f"Download Success: {len(r.content)} bytes")
         return r.content
     except Exception as e:
-        print(f"❌ Error: {e}")
+        status_code = getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'
+        print(f"Download Failed. Status: {status_code}. Error: {e}")
         return None
 
 # ---------------------------------------------------------
 # 2. PDF PARSING LOGIC (THE FIX)
 # ---------------------------------------------------------
-def normalize_tr(text):
-    """Normalize Turkish characters for search"""
-    map_chars = {'İ': 'I', 'ı': 'i', 'Ş': 'S', 'ş': 's', 'Ğ': 'G', 'ğ': 'g', 'Ü': 'U', 'ü': 'u', 'Ö': 'O', 'ö': 'o', 'Ç': 'C', 'ç': 'c', 'Â': 'A'}
-    text = text.upper()
-    for k, v in map_chars.items():
-        text = text.replace(k, v)
-    return text
-
-def pdf_bytes_to_images(pdf_bytes):
+def pdf_bytes_to_images(pdf_bytes, company_filter=None):
     """
     State Machine for PDF extraction:
     1. Wait for 'CESITLI ILANLAR'.
     2. Check for 'YASAKLAMA KARARI'.
     3. Check for '-1' in footer.
+    
+    Args:
+        company_filter (str): If set, scans text layer first. 
+                              Yields image ONLY if company name is found in text.
     """
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     
     in_ads_section = False
     
-    print("🔍 Scanning PDF structure...")
+    print("Scanning PDF structure...")
+
+    filter_norm = normalize_tr(company_filter) if company_filter else None
 
     for page_num, page in enumerate(doc):
         text_raw = page.get_text("text") # Get plain text
@@ -87,15 +130,19 @@ def pdf_bytes_to_images(pdf_bytes):
         has_keyword = "YASAKLAMA KARARI" in text_norm or "YASAKLANAN" in text_norm
         
         # Criteria B: Footer Check ("-1")
-        # We look at the last 100 characters of the page text for "-1"
-        # Resmi Gazete pagination for this section usually looks like "1234/1-1"
         footer_check = "-1" in text_raw[-100:] if len(text_raw) > 100 else False
 
         if has_keyword:
-            # Extra safety: If user insists on "-1", we prioritize it.
-            # But sometimes OCR might miss the footer, so we trust the Keyword primarily.
-            # However, if the section ended, we stop.
-            
+            # OPTIMIZATION: Text Filter Check
+            if filter_norm:
+                # If we are looking for a specific company, and it's NOT in the text layer,
+                # we skip the expensive OCR / Image rendering.
+                if filter_norm not in text_norm:
+                    # print(f"   [Skipping Page {page_num+1}: Keyword found but Company '{company_filter}' not in text]")
+                    continue
+                else:
+                    print(f"    MATCH! Company '{company_filter}' found in text on Page {page_num+1}!")
+
             print(f"   -> extracting Page {page_num + 1}...")
             
             # Render Page to OpenCV Image
@@ -110,12 +157,8 @@ def pdf_bytes_to_images(pdf_bytes):
             yield (page_num + 1, img_cv)
         
         # 3. STOP CONDITION (Optional Logic)
-        # If we were in the section, but now we don't see "-1" AND don't see keywords
-        # and the page text is substantial, we might have exited the section.
         elif in_ads_section and len(text_raw) > 200 and not footer_check:
-             # We assume the section continues until end of file, but if specific markers change:
-             # pass 
-             pass
+            pass
 
 # ---------------------------------------------------------
 # 3. COMPUTER VISION & OCR (SAME AS BEFORE)
@@ -224,28 +267,139 @@ def process_single_page(img, page_num, reader):
     return entry
 
 # ---------------------------------------------------------
-# MAIN
+# 4. DB + SCAN HELPERS
 # ---------------------------------------------------------
-if __name__ == "__main__":
-    url = get_pdf_url(TARGET_DATE)
-    pdf_data = download_pdf_to_memory(url)
-    
-    if pdf_data:
-        print("🧠 Initializing OCR...")
-        reader = easyocr.Reader(['tr'], gpu=USE_GPU)
-        final_results = []
-        
-        for page_num, img_cv in pdf_bytes_to_images(pdf_data):
-            try:
-                data = process_single_page(img_cv, page_num, reader)
-                if data and (data["Yasakli_Firma"]["Unvan"] or data["Global_Info"]["Yasak_Kayit_No"]):
-                    final_results.append(data)
-            except Exception as e:
-                print(f"⚠️ Error Page {page_num}: {e}")
+def ensure_pdf_cache():
+    os.makedirs(PDF_CACHE_DIR, exist_ok=True)
 
-        if final_results:
-            with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
-                json.dump(final_results, f, ensure_ascii=False, indent=4)
-            print(f"\n✅ Saved {len(final_results)} records to {OUTPUT_JSON}")
-        else:
-            print("\n⚠️ No records found.")
+
+def scan_date_and_store(date_str: str, company_filter: Optional[str] = None, reader=None, save_pdf: bool = False) -> List[Dict]:
+    """
+    Downloads a given date's gazette, scans for bans, upserts DB, and returns stored records.
+    """
+    ensure_db()
+    ensure_pdf_cache()
+
+    pdf_url = get_pdf_url(date_str)
+    pdf_filename = os.path.join(PDF_CACHE_DIR, f"{date_str}.pdf")
+    pdf_data = None
+
+    if os.path.exists(pdf_filename):
+        with open(pdf_filename, "rb") as f:
+            pdf_data = f.read()
+    else:
+        pdf_data = download_pdf_to_memory(pdf_url)
+        if pdf_data and save_pdf:
+            with open(pdf_filename, "wb") as f:
+                f.write(pdf_data)
+
+    if not pdf_data:
+        return []
+
+    local_reader = reader or easyocr.Reader(["tr"], gpu=USE_GPU)
+    stored_records = []
+
+    for page_num, img_cv in pdf_bytes_to_images(pdf_data, company_filter=company_filter):
+        try:
+            data = process_single_page(img_cv, page_num, local_reader)
+            if data:
+                unvan = data.get("Yasakli_Firma", {}).get("Unvan")
+                yasak_no = data.get("Global_Info", {}).get("Yasak_Kayit_No")
+                print(f"[DEBUG] Page {page_num}: Unvan='{unvan}', Yasak_No='{yasak_no}'")
+                
+                if unvan or yasak_no:
+                    record = parse_entry_to_record(data, date_str, pdf_url, page_num)
+                    inserted, rowid = upsert_ban(record)
+                    if inserted:
+                        print(f"[DB] ✅ Inserted record ID={rowid} for '{unvan or yasak_no}'")
+                    else:
+                        print(f"[DB] ⚠️ Updated existing record for '{unvan or yasak_no}'")
+                    stored_records.append(record)
+                else:
+                    print(f"[SKIP] Page {page_num}: No Unvan/Yasak_No found, skipping DB insert")
+            else:
+                print(f"[SKIP] Page {page_num}: process_single_page returned None")
+        except Exception as e:
+            print(f"[ERROR] Page {page_num}: {e}")
+
+    return stored_records
+
+
+def backfill_range(start_date: str, end_date: str, company_filter: Optional[str] = None, save_pdf: bool = False) -> Dict[str, int]:
+    """
+    Scans a date range (inclusive) and stores results in DB.
+    """
+    ensure_db()
+    start_dt = datetime.strptime(start_date, "%Y%m%d")
+    end_dt = datetime.strptime(end_date, "%Y%m%d")
+    reader = easyocr.Reader(["tr"], gpu=USE_GPU)
+    total = 0
+    scanned = 0
+
+    current = start_dt
+    while current <= end_dt:
+        date_str = current.strftime("%Y%m%d")
+        results = scan_date_and_store(date_str, company_filter=company_filter, reader=reader, save_pdf=save_pdf)
+        total += len(results)
+        scanned += 1
+        current += timedelta(days=1)
+
+    return {"scanned_days": scanned, "inserted_records": total}
+
+# ---------------------------------------------------------
+# MAIN FUNCTION WRAPPER
+# ---------------------------------------------------------
+def check_banned_status(
+    date_str: Optional[str] = None,
+    company_name: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    force_scan: bool = False,
+):
+    """
+    Yeni akış: Önce DB'den bakar, gerekirse tarayıp DB'yi doldurur.
+
+    Args:
+        date_str: Tek tarih (YYYYMMDD) için hızlandırılmış çağrı. start/end yoksa kullanılır.
+        company_name: Firma adı (normalizasyon içerir).
+        start_date, end_date: Tarih aralığı (YYYYMMDD). Boşsa date_str kullanılır.
+        force_scan: True ise DB sonucundan bağımsız yeniden tarar ve DB'ye yazar.
+    Returns:
+        {"found": bool, "count": int, "records": [...]}
+    """
+    if not (start_date and end_date):
+        if not date_str:
+            raise ValueError("start_date/end_date veya date_str verilmelidir")
+        start_date = end_date = date_str
+
+    ensure_db()
+
+    # 1) DB sorgusu
+    rows = []
+    if not force_scan:
+        rows = query_bans(company_name or "", start_date, end_date)
+        if rows:
+            return format_query_response(rows)
+
+    # 2) Canlı tarama ve DB'ye yazma
+    reader = easyocr.Reader(["tr"], gpu=USE_GPU)
+    start_dt = datetime.strptime(start_date, "%Y%m%d")
+    end_dt = datetime.strptime(end_date, "%Y%m%d")
+
+    current = start_dt
+    while current <= end_dt:
+        cur_date = current.strftime("%Y%m%d")
+        scan_date_and_store(cur_date, company_filter=company_name, reader=reader, save_pdf=True)
+        current += timedelta(days=1)
+
+    rows = query_bans(company_name or "", start_date, end_date)
+    return format_query_response(rows)
+
+if __name__ == "__main__":
+    res = check_banned_status(TARGET_DATE)
+    if res and res.get("records"):
+        with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
+            json.dump(res, f, ensure_ascii=False, indent=4)
+        print(f"Saved {res.get('count', 0)} records to {OUTPUT_JSON} | DB: {DB_PATH}")
+    else:
+        print("No records found.")
