@@ -26,7 +26,16 @@ def run_orchestrator(company_name, start_date, end_date):
     )
 
     result = crew.kickoff()
-    return result
+    
+    # Convert CrewOutput to proper format
+    if hasattr(result, 'pydantic'):
+        return result.pydantic.model_dump()
+    elif hasattr(result, 'json_dict'):
+        return result.json_dict
+    elif hasattr(result, 'raw'):
+        return result.raw
+    else:
+        return str(result)
 
 
 if __name__ == "__main__":
@@ -40,13 +49,17 @@ if __name__ == "__main__":
     try:
         final_output = run_orchestrator(args.company, args.start, args.end)
         print("\n\n######################## FINAL REPORT ########################\n")
-        print(final_output)
-
-        try:
-            json.loads(final_output)
+        
+        if isinstance(final_output, dict):
+            print(json.dumps(final_output, indent=2, ensure_ascii=False))
             print("Valid JSON Output")
-        except Exception:
-            print("Output is not pure JSON (LLM might have added text).")
+        else:
+            print(final_output)
+            try:
+                json.loads(final_output)
+                print("Valid JSON Output")
+            except Exception:
+                print("Output is not pure JSON (LLM might have added text).")
 
     except Exception as e:
         print(f"Execution Failed: {e}")

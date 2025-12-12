@@ -2,6 +2,8 @@ import streamlit as st
 import json
 from datetime import datetime, date
 from main import run_orchestrator
+from pdf_generator import json_to_pdf
+import os
 
 st.set_page_config(
     page_title="Şirket Risk Analizi",
@@ -68,7 +70,14 @@ if analyze_button:
                 
                 # Try to parse as JSON
                 try:
-                    report_data = json.loads(result)
+                    # Handle different result types
+                    if isinstance(result, dict):
+                        report_data = result
+                    elif isinstance(result, str):
+                        report_data = json.loads(result)
+                    else:
+                        # Should not happen with updated main.py
+                        report_data = json.loads(str(result))
                     
                     # Display results in organized sections
                     col1, col2, col3 = st.columns(3)
@@ -109,6 +118,43 @@ if analyze_button:
                     # Show raw JSON in expander
                     with st.expander("🔧 Ham JSON Çıktısı"):
                         st.json(report_data)
+                    
+                    # PDF Export - Auto generate and show download button
+                    st.markdown("---")
+                    st.subheader("📄 PDF Rapor")
+                    
+                    try:
+                        pdf_filename = f"risk_report_{company_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                        pdf_path = os.path.join("data", pdf_filename)
+                        
+                        os.makedirs("data", exist_ok=True)
+                        
+                        # Generate PDF immediately
+                        json_to_pdf(
+                            report_data,
+                            pdf_path,
+                            company_name,
+                            start_str,
+                            end_str
+                        )
+                        
+                        # Read PDF and provide download button
+                        with open(pdf_path, "rb") as pdf_file:
+                            pdf_bytes = pdf_file.read()
+                            st.download_button(
+                                label="📥 PDF Raporunu İndir",
+                                data=pdf_bytes,
+                                file_name=pdf_filename,
+                                mime="application/pdf",
+                                type="primary"
+                            )
+                        
+                        st.success(f"✅ PDF hazır!")
+                    
+                    except Exception as pdf_error:
+                        st.error(f"PDF oluşturulurken hata: {str(pdf_error)}")
+                        with st.expander("Hata Detayları"):
+                            st.exception(pdf_error)
                 
                 except json.JSONDecodeError:
                     # If not valid JSON, show as text
