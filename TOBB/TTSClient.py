@@ -99,6 +99,7 @@ class TTSClient:
                 "SicilMudurluguId": str(mudurluk_id),
                 "TicSicNo": sicil_no,
                 "TicaretUnvani": ticaret_unvani,
+                "Tarih":"1",
                 "Tarih1": tarih1,
                 "Tarih2": tarih2
             })
@@ -180,21 +181,7 @@ class TTSClient:
                 ilan_turu = ilan.get("IlanTuru", "").upper()
                 target_phrase = ilan.get("Unvan", "").upper()
 
-                if "KURULU" in ilan_turu:
-                    section_type = "KURULUS"
-                elif "PAY" in ilan_turu and not used_section:
-                    section_type = "PAY"
-                    used_section = True
-                elif "SERMAYE" in ilan_turu and not used_section:
-                    section_type = "SERMAYE"
-                    used_section = True
-                else:
-                    print("[OCR] Skipped: Irrelevant IlanTuru or already processed PAY/SERMAYE.")
-                    ilan["OCR"] = None
-                    enriched.append(ilan)
-                    continue
 
-                print(f"[OCR] Section type chosen: {section_type}")
                 first_url = self.BASE + "/view/hizlierisim/" + ilan["PDF"]
                 print(f"[OCR] First URL for PDF: {first_url}")
 
@@ -212,7 +199,7 @@ class TTSClient:
 
                 print("[OCR] Running TOBBOCR...")
                 ocr = TOBBOCR.TOBBOCR(dpi=200, gpu=True)
-                paragraphs = ocr.run(pdf_path=pdf_path, section_type=section_type, target_company=target_phrase)
+                paragraphs = ocr.run(pdf_path=pdf_path,  target_company=target_phrase)
                 ilan["OCR"] = paragraphs
                 enriched.append(ilan)
                 print(f"[OCR] OCR result: {paragraphs}")
@@ -252,6 +239,6 @@ if __name__ == "__main__":
     client.main(
         mudurluk_id=232,
         sicil_no="310797-5",
-        tarih1="01.12.2025",
+        tarih1="01.12.2023",
         tarih2="14.12.2025"
     )
