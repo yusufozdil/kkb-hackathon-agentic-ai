@@ -24,9 +24,13 @@ def search_company(company_name: str, mudurluk_file: str) -> List[Dict[str, Any]
 def fetch_ilan_ocr(mudurluk_id: str, sicil_no: str, start_date: str, end_date: str, email: str, password: str) -> Dict[str, Any]:
     # 🔓 Load manual cookies from environment (CAPTCHA bypass)
     manual_cookies = {}
+    cookie0 = os.getenv("TOBB_COOKIE_0")  # atrsrv-101020155
     cookie1 = os.getenv("TOBB_COOKIE_1")  # atrsrv-101041123
     cookie2 = os.getenv("TOBB_COOKIE_2")  # atrsrv-101041124
     
+    if cookie0:
+        manual_cookies["atrsrv-101020155"] = cookie0  # TOBB session cookie
+        print(f"[TOBB] Loaded atrsrv-101020155: {cookie0[:20]}...")
     if cookie1:
         manual_cookies["atrsrv-101041123"] = cookie1  # TOBB session cookie
         print(f"[TOBB] Loaded atrsrv-101041123: {cookie1[:20]}...")
@@ -76,21 +80,64 @@ def fetch_trade_registry(company_name: str, start_date: str, end_date: str) -> D
     if not mudurluk_id or not sicil_no:
         return {"status": "error", "message": "mudurluk_id veya sicil_no eksik", "data": search_results}
 
-    ilan_data = fetch_ilan_ocr(mudurluk_id, sicil_no, start_date, end_date, email, password)
+    # 🎯 PERFORMANCE: Skip OCR (too slow), just fetch ilan list
+    # Old: fetch_ilan_ocr (includes OCR processing)
+    # New: Direct fetch without OCR
+    
+    # Create TTSClient and login
+    manual_cookies = {}
+    cookie0 = os.getenv("TOBB_COOKIE_0")
+    cookie1 = os.getenv("TOBB_COOKIE_1")
+    cookie2 = os.getenv("TOBB_COOKIE_2")
+    
+    if cookie0:
+        manual_cookies["atrsrv-101020155"] = cookie0
+        print(f"[TOBB] Loaded atrsrv-101020155: {cookie0[:20]}...")
+    if cookie1:
+        manual_cookies["atrsrv-101041123"] = cookie1
+        print(f"[TOBB] Loaded atrsrv-101041123: {cookie1[:20]}...")
+    if cookie2:
+        manual_cookies["atrsrv-101041124"] = cookie2
+        print(f"[TOBB] Loaded atrsrv-101041124: {cookie2[:20]}...")
+    
+    from TOBB.TTSClient import TTSClient
+    client = TTSClient(email=email, password=password, manual_cookies=manual_cookies if manual_cookies else None)
+    
+    print("[TOBB] Attempting login...")
+    if not client.login():
+        print("[TOBB] Login failed!")
+        return {"status": "Login Failed", "data": []}
+    
+    print("[TOBB] Login successful, fetching ilanlar (WITHOUT OCR for speed)...")
+    tarih1 = _format_ddmmyyyy(start_date)
+    tarih2 = _format_ddmmyyyy(end_date)
+    
+    # Fetch ilanlar WITHOUT OCR
+    ilan_data = client.fetch_ilanlar(mudurluk_id=mudurluk_id, sicil_no=sicil_no, tarih1=tarih1, tarih2=tarih2)
+    
     if ilan_data.get("status") != "success":
         return ilan_data
-
-    # 🎯 PERFORMANCE: Limit ilanlar to prevent LLM timeout (max 10 for demo)
+    
     ilanlar = ilan_data["data"]
+    
+    # Limit to prevent LLM timeout (max 10 for demo)
+    total_found = len(ilanlar)
     if len(ilanlar) > 10:
-        print(f"[TOBB] ⚠️ {len(ilanlar)} ilan bulundu, ilk 10'u kullanılıyor (LLM timeout engellemek için)")
+        print(f"[TOBB] ⚠️ {total_found} ilan bulundu, ilk 10'u kullanılıyor (LLM timeout engellemek için)")
         ilanlar = ilanlar[:10]
+    
+    # Remove OCR field if present to reduce payload size
+    for ilan in ilanlar:
+        if 'OCR' in ilan:
+            del ilan['OCR']
+        if 'ocr_text' in ilan:
+            del ilan['ocr_text']
     
     return {
         "status": "success",
         "search_result": first,
         "ilanlar": ilanlar,
-        "total_found": len(ilan_data["data"]),  # Orijinal sayı
-        "returned": len(ilanlar),  # Döndürülen sayı
+        "total_found": total_found,
+        "returned": len(ilanlar),
     }
 

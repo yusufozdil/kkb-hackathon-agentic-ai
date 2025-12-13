@@ -23,24 +23,41 @@ class OrchestratorAgents:
     def lead_researcher(self):
         return Agent(
             role="Lead Researcher",
-            goal="Collect comprehensive, detailed data about the target company from ALL available sources: Trade Registry, Banned Lists, and News.",
+            goal="I WILL call exactly 4 tools in strict sequence: 1) Check Banned Status 2) Fetch Trade Registry 3) Fetch News 4) Fetch Public Announcements. I will NOT provide Final Answer until ALL 4 tools are called.",
             backstory=(
-                "You are a meticulous senior due diligence researcher with 15 years of experience. "
-                "You trust only verified data and believe in exhaustive research. "
-                "Your job is to use EVERY tool available and extract MAXIMUM information about a company. "
-                "You systematically check all sources, note every detail, and provide thorough documentation. "
-                "You never rush your work and always ensure completeness. "
-                "You do not make assumptions; you only report what your tools find with full context and details."
+                "You are a robotic, methodical data collector who follows instructions EXACTLY as written. "
+                "You do NOT think, interpret, or make decisions - you simply execute tools in sequence. "
+                "\n\n"
+                "YOUR ONLY JOB:\n"
+                "1️⃣ Call 'Check Banned Status' → document result → continue\n"
+                "2️⃣ Call 'Fetch Trade Registry' → document result → continue\n"
+                "3️⃣ Call 'Fetch News' → document result → continue\n"
+                "4️⃣ Call 'Fetch Public Announcements' → document result → continue\n"
+                "5️⃣ Provide Final Answer with ALL 4 tool results\n"
+                "\n"
+                "STRICT RULES:\n"
+                "❌ You CANNOT skip step 3 (Fetch News) even if steps 1-2 have data\n"
+                "❌ You CANNOT skip step 4 (Fetch Public Announcements) even if steps 1-3 have data\n"
+                "❌ You CANNOT provide Final Answer before completing ALL 4 steps\n"
+                "❌ You CANNOT make up or assume tool results - if you didn't call it, you don't have data\n"
+                "✅ You MUST call each tool INDIVIDUALLY with separate tool invocations\n"
+                "✅ You MUST wait for actual tool response before moving to next tool\n"
+                "\n"
+                "If you provide Final Answer after only 2 tools, your work will be REJECTED."
             ),
             tools=[
                 OrchestratorTools.check_banned_tool,
                 OrchestratorTools.fetch_trade_registry_tool,
                 OrchestratorTools.fetch_news_tool,
+                OrchestratorTools.fetch_ilan_gov_tool,  # Konkordato için KRİTİK!
+                OrchestratorTools.fetch_ihale_tool,
             ],
             allow_delegation=False,
             verbose=True,
-            max_iter=20,  # Daha fazla araştırma ve veri toplama için artırıldı
+            max_iter=35,  # 4 tool + retrials
             llm=llm,
+            memory=False,  # Disable memory to prevent over-thinking
+            respect_context_window=True,
         )
 
     def reporting_analyst(self):

@@ -59,12 +59,39 @@ Bu komut API bağlantısını test edecek ve kullanılabilir modelleri gösterec
 
 ### 5. Ortam Değişkenleri (Opsiyonel)
 
-TOBB entegrasyonu için `.env` dosyasına ekleyin:
+TOBB ve İhale verileri için `.env` dosyasına ekleyin:
 
 ```bash
+# TOBB (Ticaret Sicili)
 TTS_EMAIL=your_email@example.com
 TTS_PASSWORD=your_password
+TOBB_COOKIE_1=your_cookie_value_1
+TOBB_COOKIE_2=your_cookie_value_2
+
+# Playwright (İhale Scraper için)
 ```
+
+**Not:** TOBB cookie'leri tarayıcıdan manuel alınabilir ve 1-2 saat geçerlidir.
+
+### 6. Yasaklı Liste Database'ini Hazırlama
+
+Sistem yasaklı liste kontrolü için bir SQLite database kullanır. Database varsayılan olarak boştur.
+
+**İlk kullanım için database'i doldurmak için:**
+
+```python
+from tool_banned_check import check_banned_status
+
+# Belirli tarih aralığını tara ve DB'ye ekle
+result = check_banned_status(
+    company_name="",  # Boş = tüm şirketler
+    start_date="20251101",  # Başlangıç tarihi
+    end_date="20251130",    # Bitiş tarihi
+    force_scan=True         # PDF'leri tara ve DB'ye ekle
+)
+```
+
+**Not:** `force_scan=True` kullanılmazsa sistem sadece database'e bakar. Yoksa "yasaklı değildir" döner.
 
 ## 💻 Kullanım
 

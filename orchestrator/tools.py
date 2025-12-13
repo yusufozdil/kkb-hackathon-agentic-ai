@@ -25,6 +25,18 @@ except Exception as e:
     print(f"[WARN] tobb_service import failed: {e}")
     fetch_trade_registry = None
 
+try:
+    from ihale_service import fetch_ihale_data
+except Exception as e:
+    print(f"[WARN] ihale_service import failed: {e}")
+    fetch_ihale_data = None
+
+try:
+    from ilan_gov_service import fetch_ilan_gov_announcements
+except Exception as e:
+    print(f"[WARN] ilan_gov_service import failed: {e}")
+    fetch_ilan_gov_announcements = None
+
 
 def _coerce_str(val: Any) -> str:
     if isinstance(val, dict):
@@ -158,3 +170,54 @@ class OrchestratorTools:
             except Exception as e:
                 return {"error": f"news_service failed: {e}", "start_date": start_date, "end_date": end_date}
         return {"error": "news_service not found"}
+
+    @tool("Fetch Tender Data")
+    def fetch_ihale_tool(company_name: Any):
+        """
+        Fetches company tender/contract history from ihaleciler.com
+        NOTE: This tool is OPTIONAL and may take 15-30 seconds. If it fails or times out, continue with other sources.
+        Returns: {"status": str, "data": {...}, "message": str}
+        """
+        if fetch_ihale_data:
+            try:
+                company = _coerce_str(company_name)
+                result = fetch_ihale_data(company, timeout=20000)  # 20 second timeout
+                return result
+            except Exception as exc:
+                return {
+                    "status": "error",
+                    "data": None,
+                    "message": f"Tender data fetch failed: {exc}. This is a technical issue, not a risk factor."
+                }
+        return {"status": "not_available", "data": None, "message": "ihale_service not found"}
+
+    @tool("Fetch Public Announcements")
+    def fetch_ilan_gov_tool(company_name: Any, start_date: Any, end_date: Any, max_results: Any = 20):
+        """
+        Fetches public announcements (court notices, bankruptcy, liquidation) from ilan.gov.tr
+        NOTE: This tool is OPTIONAL. If it fails or times out, continue with other sources.
+        Returns: {"status": str, "count": int, "announcements": [...]}
+        """
+        if fetch_ilan_gov_announcements:
+            try:
+                company = _coerce_str(company_name)
+                s, e = _validate_dates(_coerce_str(start_date), _coerce_str(end_date))
+                limit = _coerce_int(max_results)
+                if limit <= 0:
+                    limit = 20
+                return fetch_ilan_gov_announcements(company, s, e, max_results=limit)
+            except Exception as exc:
+                return {
+                    "status": "error",
+                    "company": str(company_name),
+                    "count": 0,
+                    "announcements": [],
+                    "message": f"Public announcements fetch failed: {exc}. This is a technical issue, not a risk factor."
+                }
+        return {
+            "status": "not_available",
+            "company": str(company_name),
+            "count": 0,
+            "announcements": [],
+            "message": "ilan_gov_service not found"
+        }

@@ -501,15 +501,16 @@ def check_banned_status(
     force_scan: bool = False,
 ):
     """
-    Yeni akış: Önce DB'den bakar, gerekirse tarayıp DB'yi doldurur.
-
+    Database-first yaklaşım: Önce DB'ye bakar.
+    
     Args:
         date_str: Tek tarih (YYYYMMDD) için hızlandırılmış çağrı. start/end yoksa kullanılır.
         company_name: Firma adı (normalizasyon içerir).
         start_date, end_date: Tarih aralığı (YYYYMMDD). Boşsa date_str kullanılır.
-        force_scan: True ise DB sonucundan bağımsız yeniden tarar ve DB'ye yazar.
+        force_scan: True ise DB'den bağımsız yeniden PDF tarar ve DB'ye yazar.
+                   False ise (default) sadece DB'ye bakar, yoksa yasaklı değildir.
     Returns:
-        {"found": bool, "count": int, "records": [...]}
+        {"found": bool, "count": int, "records": [...], "date_range_checked": str}
     """
     if not (start_date and end_date):
         if not date_str:
@@ -519,13 +520,14 @@ def check_banned_status(
     ensure_db()
 
     # 1) DB sorgusu
-    rows = []
+    rows = query_bans(company_name or "", start_date, end_date)
+    
+    # force_scan=False ise sadece DB sonucunu dön (yoksa yasaklı değildir)
     if not force_scan:
-        rows = query_bans(company_name or "", start_date, end_date)
-        if rows:
-            return format_query_response(rows, start_date, end_date)
+        return format_query_response(rows, start_date, end_date)
 
-    # 2) Canlı tarama ve DB'ye yazma
+    # 2) force_scan=True ise: PDF'leri tara ve DB'ye yazma
+    print(f"[FORCE SCAN] Scanning Official Gazette PDFs for date range {start_date} - {end_date}")
     reader = easyocr.Reader(["tr"], gpu=USE_GPU)
     start_dt = datetime.strptime(start_date, "%Y%m%d")
     end_dt = datetime.strptime(end_date, "%Y%m%d")
@@ -536,6 +538,7 @@ def check_banned_status(
         scan_date_and_store(cur_date, company_filter=company_name, reader=reader, save_pdf=True)
         current += timedelta(days=1)
 
+    # Tarama sonrası DB'den tekrar sor
     rows = query_bans(company_name or "", start_date, end_date)
     return format_query_response(rows, start_date, end_date)
 
