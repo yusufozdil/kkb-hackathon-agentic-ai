@@ -11,6 +11,26 @@ import json
 import os
 
 
+def sanitize_text(text):
+    """
+    PDF oluşturulurken sorun çıkaran karakterleri temizler.
+    Özellikle tire işaretlerini (-) standart ASCII tireye dönüştürür.
+    """
+    if not isinstance(text, str):
+        return text
+    
+    # Tire işaretlerini düzelt
+    text = text.replace('–', '-')  # en-dash
+    text = text.replace('—', '-')  # em-dash
+    text = text.replace('―', '-')  # horizontal bar
+    
+    # Tırnak işaretlerini düzelt
+    text = text.replace('"', '"').replace('"', '"')
+    text = text.replace(''', "'").replace(''', "'")
+    
+    return text
+
+
 def register_turkish_font():
     """
     Türkçe karakter desteği için font kaydı.
@@ -202,7 +222,7 @@ def json_to_pdf(json_data, output_path, company_name, start_date, end_date):
     confidence = data.get("confidence_score", 0)
     
     risk_color = colors.red if is_banned else colors.green
-    ban_status = "YASAKLİ ⛔" if is_banned else "TEMİZ ✅"
+    ban_status = "YASAKLI" if is_banned else "TEMİZ"
     
     risk_data = [
         ["Yasak Durumu:", ban_status],
@@ -239,7 +259,9 @@ def json_to_pdf(json_data, output_path, company_name, start_date, end_date):
     paragraphs = report_text.split('\n')
     for para in paragraphs:
         if para.strip():
-            story.append(Paragraph(para.strip(), body_style))
+            # Metni temizle (tire sorunları için)
+            clean_para = sanitize_text(para.strip())
+            story.append(Paragraph(clean_para, body_style))
     
     story.append(Spacer(1, 0.5*cm))
     

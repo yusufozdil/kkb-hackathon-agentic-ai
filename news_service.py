@@ -40,7 +40,23 @@ def fetch_news_tr(company_name: str, start_date: str, end_date: str, limit: int 
     start_dt = _normalize_yyyymmdd(start_date)
     end_dt = _normalize_yyyymmdd(end_date)
 
-    q = company_name.replace(" ", "+")
+    first_run_results = _perform_google_search(company_name, start_dt, end_dt, limit)
+    if first_run_results:
+        return first_run_results
+
+    # Fallback: Try with first 2 words if original name is long
+    words = company_name.split()
+    if len(words) > 2:
+        # Construct short name (e.g., "ARMİ AMBALAJ")
+        short_name = " ".join(words[:2])
+        print(f"[NEWS] 0 results for full name. Retrying with short name: {short_name}")
+        return _perform_google_search(short_name, start_dt, end_dt, limit)
+    
+    return []
+
+
+def _perform_google_search(query_text: str, start_dt: datetime, end_dt: datetime, limit: int) -> List[Dict]:
+    q = query_text.replace(" ", "+")
     google_query = f"\"{q}\"+after:{_to_iso(start_dt)}+before:{_to_iso(end_dt)}"
     url = f"https://news.google.com/rss/search?q={google_query}&hl=tr&gl=TR&ceid=TR:tr"
 
@@ -56,13 +72,12 @@ def fetch_news_tr(company_name: str, start_date: str, end_date: str, limit: int 
 
         results.append({
             "title": entry.title,
-            "link": entry.link,
+            # "link": entry.link,
             "published": pub_dt.isoformat(),
             "source": _extract_domain(entry.link),
             "language": "tr",
         })
         if len(results) >= limit:
             break
-
+            
     return results
-

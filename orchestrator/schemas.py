@@ -18,7 +18,7 @@ class RiskReport(BaseModel):
         ..., 
         description=(
             "List of ALL data sources with URLs where applicable. "
-            "Format: ['gazette', 'https://news.google.com/...', 'https://hurriyet.com.tr/...', etc.]. "
+            "Format: ['Resmi Gazete', 'https://news.google.com/...', 'https://hurriyet.com.tr/...', etc.]. "
             "Include EVERY news article link mentioned in the report."
         )
     )

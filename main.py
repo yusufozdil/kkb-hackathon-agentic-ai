@@ -17,17 +17,45 @@ def run_orchestrator(company_name, start_date, end_date):
     researcher = agents.lead_researcher()
     analyst = agents.reporting_analyst()
 
-    task_research = tasks.research_task(researcher, company_name, start_date, end_date)
-    task_reporting = tasks.reporting_task(analyst, company_name)
+    task_banned = tasks.check_banned_task(researcher, company_name, start_date, end_date)
+    task_registry = tasks.fetch_registry_task(researcher, company_name, start_date, end_date)
+    task_news = tasks.fetch_news_task(researcher, company_name, start_date, end_date)
+    task_announcements = tasks.fetch_announcements_task(researcher, company_name, start_date, end_date)
+    
+    task_consolidate = tasks.consolidate_research_task(researcher, company_name)
+    
+    # Wire up context for consolidation
+    task_consolidate.context = [task_banned, task_registry, task_news, task_announcements]
 
+    task_reporting = tasks.reporting_task(analyst, company_name)
+    # Reporting also needs context from consolidation
+    task_reporting.context = [task_consolidate]
+
+    print("🚀 [DEBUG] Starting sequential execution...")
+    
+    print("🚀 [DEBUG] Step 1: Checking Banned Status...")
+    # These tasks are just definitions, the crew executes them.
+    # But since we use sequential process, we can't easily hook into the middle unless we use callbacks.
+    # However, CrewAI prints verbose logs.
+    # Let's trust the verbose output for now, but ensure we catch exceptions.
+    
     crew = Crew(
         agents=[researcher, analyst],
-        tasks=[task_research, task_reporting],
+        tasks=[
+            task_banned, 
+            task_registry, 
+            task_news, 
+            task_announcements, 
+            task_consolidate, 
+            task_reporting
+        ],
         process=Process.sequential,
         verbose=True
     )
 
+    print("🚀 [DEBUG] Kickoff started. Waiting for completion...")
     result = crew.kickoff()
+    print("🚀 [DEBUG] Kickoff finished!")
     
     # Convert CrewOutput to proper format
     if hasattr(result, 'pydantic'):

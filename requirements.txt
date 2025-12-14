@@ -16,3 +16,5 @@ feedparser
 streamlit
 reportlab
 playwright
+pydantic
+rapidfuzz

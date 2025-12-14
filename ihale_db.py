@@ -218,7 +218,7 @@ def parse_entry_to_record(entry: Dict[str, Any], date_str: str, pdf_url: Optiona
         "yasak_kayit_no": global_info.get("Yasak_Kayit_No"),
         "ikn": global_info.get("IKN"),
         "bakanlik": global_info.get("Bakanlik"),
-        "yasak_suresi": global_info.get("Yasak_Suresi"),
+        "yasak_suresi": global_info.get("Yasak_Suresi") or "1 Yıl",
         "idare_unvan": idare.get("Unvan"),
         "idare_adres": idare.get("Adres"),
         "ortaklar": ortaklar,
@@ -229,10 +229,18 @@ def parse_entry_to_record(entry: Dict[str, Any], date_str: str, pdf_url: Optiona
 
 
 def format_query_response(rows: List[Dict[str, Any]], start_date: str = None, end_date: str = None) -> Dict[str, Any]:
+    # Fix null yasak_suresi for existing records
+    processed_rows = []
+    for r in rows:
+        row_dict = dict(r)
+        if not row_dict.get("yasak_suresi"):
+            row_dict["yasak_suresi"] = "1 Yıl"
+        processed_rows.append(row_dict)
+
     result = {
-        "found": len(rows) > 0,
-        "count": len(rows),
-        "records": rows,
+        "found": len(processed_rows) > 0,
+        "count": len(processed_rows),
+        "records": processed_rows,
     }
     if start_date and end_date:
         result["date_range_checked"] = f"{start_date} to {end_date}"

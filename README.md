@@ -1,182 +1,142 @@
-# 🔍 KKB Hackathon - AI-Powered Due Diligence System
+# 🔍 KKB Hackathon - StackOverflow
 
-Şirketlerin risk analizini otomatik olarak yapan AI destekli bir due diligence sistemi.
+**Agentic AI** tabanlı, kapsamlı ve otomatik şirket risk analizi  sistemi.
 
 ## 🎯 Özellikler
 
-- **🚫 Resmi Gazete Yasaklı Listesi**: OCR ile PDF tarama ve veritabanı önbellekleme
-- **📰 Haber Analizi**: Google News üzerinden Türkçe haber tarama
-- **🏢 Ticaret Sicili**: TOBB entegrasyonu ile şirket bilgileri
-- **🤖 AI Agents**: CrewAI framework ile koordineli veri toplama ve analiz
-- **🎨 Web Arayüzü**: Streamlit ile kullanıcı dostu GUI
+Bu sistem, 4 farklı veri kaynağını tarayarak şirketler hakkında detaylı risk raporu oluşturur:
 
-## 📋 Gereksinimler
+1.  **🚫 Yasaklı Listesi Kontrolü** (`tool_banned_check.py`)
+    *   **Resmi Gazete** üzerinden güncel yasaklı listesi taraması.
+    *   OCR (EasyOCR) ile PDF dökümanlarından veri çıkarma.
+    *   SQLite tabanlı önbellekleme sistemi.
 
-- Python 3.12+
-- KKB Kloudeks API Key (hackathon tarafından sağlanmıştır)
-- TOBB hesabı (opsiyonel, ticaret sicili için)
+2.  **📢 Kamu İlanları & Konkordato** (`ilan_gov_service.py`)
+    *   **ilan.gov.tr** üzerinden kamu ilanlarının taranması.
+    *   **Konkordato**, İflas, Tasfiye ve Mahkeme kararlarının tespiti.
+    *   Yüksek riskli durumlar için özel uyarı mekanizması.
 
-## 🚀 Kurulum
+3.  **📰 Haber Analizi** (`news_service.py`)
+    *   **Google News** üzerinden son 2 yıllık haber arşivi taraması.
+    *   Negatif haber tespiti ve duygu analizi.
+    *   "Not Found" durumunda pozitif dil kullanımı (Hallucination prevention).
 
-### 1. Projeyi İndir
+4.  **🏢 Ticaret Sicili** (`tobb_service.py`)
+    *   **TOBB** entegrasyonu ile resmi şirket kayıtlarının doğrulanması.
+    *   Sicil gazetesi ilanlarının takibi.
 
+5.  **🤖 Agentic Workflow** (`orchestrator/`)
+    *   **Lead Researcher**: Veri toplama, doğrulama ve konsolidasyon.
+    *   **Reporting Analyst**: Finansal risk analizi ve PDF rapor yazımı.
+    *   Sıralı (Sequential) görev yapısı ile garantili tool kullanımı.
+
+6.  **📊 Dinamik Raporlama**
+    *   Özelleştirilmiş PDF rapor çıktısı.
+    *   Türkçe karakter uyumlu (Font sanitization).
+    *   Streamlit tabanlı modern kullanıcı arayüzü.
+
+## 🚀 Kurulum ve Çalıştırma Rehberi
+ 
+Bu projeyi kendi bilgisayarınızda (local) çalıştırmak için aşağıdaki adımları sırasıyla takip edin.
+ 
+### 1. Ön Hazırlıklar
+*   **Python 3.10+**: Sisteminizde Python'un yüklü olduğundan emin olun.
+*   **Git**: Projeyi klonlamak için.
+ 
+### 2. Projeyi İndirin
 ```bash
-git clone https://github.com/KULLANICIADI/kkb-hackathon-agentic-ai.git
+git clone https://github.com/yusufozdil/kkb-hackathon-agentic-ai.git
 cd kkb-hackathon-agentic-ai
 ```
-
-### 2. Bağımlılıkları Yükle
-
+ 
+### 3. Sanal Ortam (Virtual Environment) Kurulumu
+Bağımlılıkların çakışmaması için sanal ortam kullanmanız şiddetle önerilir.
+```bash
+# Mac / Linux
+python3 -m venv venv
+source venv/bin/activate
+ 
+# Windows
+python -m venv venv
+.\venv\Scripts\activate
+```
+ 
+### 4. Kütüphanelerin Yüklenmesi
 ```bash
 pip install -r requirements.txt
 ```
+*Not: Playwright hatası alırsanız `playwright install` komutunu çalıştırmanız gerekebilir.*
+ 
+### 5. Konfigürasyon (.env Dosyası)
+Bu adım, **TOBB Ticaret Sicil** ve **KKB API** erişimi için kritiktir.
+ 
+1.  `.env.example` dosyasının ismini `.env` olarak değiştirin (veya kopyalayın).
+    ```bash
+    cp .env.example .env
+    ```
+2.  `.env` dosyasını bir metin editörü ile açın ve aşağıdaki alanları doldurun:
+ 
+    *   **KKB_API_KEY**: Kloudeks API anahtarınız.
+    *   **TOBB_COOKIE_...**: Ticaret Sicil Gazetesi verilerini çekebilmek için giriş yapmış bir oturumun çerezlerine (cookies) ihtiyacınız var.
+ 
+    **TOBB Çerezlerini Nasıl Alırsınız?**
+    1.  [ticaretsicil.gov.tr](https://www.ticaretsicil.gov.tr) adresine gidin ve giriş yapın.
+    2.  Tarayıcınızda Geliştirici Araçlarını (F12) açın.
+    3.  **Application** (veya Storage) sekmesine gidin -> **Cookies**.
+    4.  `atrsrv-101020155`, `atrsrv-101041123` ve `atrsrv-101041124` isimli çerezlerin değerlerini kopyalayıp `.env` dosyasındaki ilgili yerlere yapıştırın.
+ 
+> **⚠️ Önemli:** Bu çerezlerin süresi belirli bir süre sonra dolar. Eğer "Login Problem" hatası alırsanız, bu adımı tekrarlayıp `.env` dosyasındaki çerezleri güncellemelisiniz.
 
-### 3. API Key Konfigürasyonu
-
-ENV_TEMPLATE dosyasını kopyalayıp .env dosyası oluşturun:
-
-```bash
-cp ENV_TEMPLATE .env
-```
-
-Sonra .env dosyasını düzenleyip API key'inizi ekleyin:
-
-```bash
-# .env dosyası
-KKB_API_KEY=sk-your-actual-api-key-here  # Buraya gerçek key'inizi yazın
-KKB_BASE_URL=https://mia.csp.kloudeks.com/v1
-KKB_MODEL=gpt-oss-120b
-KKB_EMBEDDING_MODEL=qwen3-embedding-8b
-```
-
-### 4. API Bağlantısını Test Edin
-
-```bash
-python test_kloudeks_api.py
-```
-
-Bu komut API bağlantısını test edecek ve kullanılabilir modelleri gösterecektir.
-
-### 5. Ortam Değişkenleri (Opsiyonel)
-
-TOBB ve İhale verileri için `.env` dosyasına ekleyin:
-
-```bash
-# TOBB (Ticaret Sicili)
-TTS_EMAIL=your_email@example.com
-TTS_PASSWORD=your_password
-TOBB_COOKIE_1=your_cookie_value_1
-TOBB_COOKIE_2=your_cookie_value_2
-
-# Playwright (İhale Scraper için)
-```
-
-**Not:** TOBB cookie'leri tarayıcıdan manuel alınabilir ve 1-2 saat geçerlidir.
-
-### 6. Yasaklı Liste Database'ini Hazırlama
-
-Sistem yasaklı liste kontrolü için bir SQLite database kullanır. Database varsayılan olarak boştur.
-
-**İlk kullanım için database'i doldurmak için:**
-
-```python
-from tool_banned_check import check_banned_status
-
-# Belirli tarih aralığını tara ve DB'ye ekle
-result = check_banned_status(
-    company_name="",  # Boş = tüm şirketler
-    start_date="20251101",  # Başlangıç tarihi
-    end_date="20251130",    # Bitiş tarihi
-    force_scan=True         # PDF'leri tara ve DB'ye ekle
-)
-```
-
-**Not:** `force_scan=True` kullanılmazsa sistem sadece database'e bakar. Yoksa "yasaklı değildir" döner.
 
 ## 💻 Kullanım
 
-### Web Arayüzü (Önerilen)
+### Web Arayüzü (Streamlit) - Önerilen
+
+Uygulamayı başlatmak için:
 
 ```bash
-streamlit run app.py
+python 3.13 -m streamlit run app.py
 ```
 
-Tarayıcınızda `http://localhost:8501` açılacak.
+Tarayıcınızda `http://localhost:8501` adresi açılacaktır.
+1.  Şirket adını girin.
+2.  Tarih aralığını seçin.
+3.  "Analizi Başlat" butonuna basın.
+4.  PDF raporunu indirin.
 
-### Komut Satırı
 
-```bash
-python main.py --company "ACME Teknoloji" --start 20241101 --end 20241130
+## 🏗️ Proje Mimarisi
+
 ```
-
-## 🏗️ Proje Yapısı
-
-```
-├── app.py                  # Streamlit GUI
-├── main.py                 # Ana orchestrator
-├── ihale_db.py            # SQLite veritabanı yönetimi
-├── tool_banned_check.py   # Resmi Gazete PDF tarayıcı (OCR)
-├── news_service.py        # Google News RSS entegrasyonu
-├── tobb_service.py        # Ticaret Sicili entegrasyonu
+├── app.py                  # Streamlit Arayüzü
+├── main.py                 # Orchestrator Entry Point
+├── pdf_generator.py        # Rapor PDF Oluşturucu
+├── ihale_db.py            # SQLite Veritabanı Katmanı
+├── tool_banned_check.py   # Yasaklı Liste Aracı
+├── ilan_gov_service.py    # Kamu İlanları Servisi
+├── news_service.py        # Haber Servisi
 ├── orchestrator/
-│   ├── agents.py          # CrewAI agent tanımları
-│   ├── tasks.py           # AI görev tanımları
-│   ├── tools.py           # Agent araçları
-│   └── schemas.py         # Pydantic veri modelleri
-└── data/
-    ├── ihale_yasakli.db   # Yasak listesi önbelleği
-    └── pdf_cache/         # İndirilen PDF'ler
+│   ├── agents.py          # CrewAI Agent Tanımları
+│   ├── tasks.py           # CrewAI Görev Tanımları (5 Adımlı Akış)
+│   ├── tools.py           # Agent Tool Wrapper'ları
+│   └── schemas.py         # Pydantic Modelleri
+└── data/                   # Oluşturulan Raporlar ve Önbellek
 ```
 
-## 🔧 Teknolojiler
+## ⚠️ Önemli Notlar
 
-- **AI Framework**: CrewAI, LangChain
-- **LLM**: KKB Kloudeks API (gpt-oss-120b)
-- **Embeddings**: Qwen3 Embedding (8B)
-- **OCR**: EasyOCR, OpenCV
-- **PDF**: PyMuPDF
-- **Web**: Streamlit
-- **Database**: SQLite
-
-## ⚠️ Windows Uyumluluğu
-
-Windows'ta çalıştırırken `SIGHUP` hatası alırsanız:
-
-```python
-# C:\Users\...\site-packages\crewai\events\types\system_events.py dosyasını düzenleyin
-SIGHUP = getattr(signal, 'SIGHUP', signal.SIGTERM)
-SIGTSTP = getattr(signal, 'SIGTSTP', signal.SIGTERM)
-SIGCONT = getattr(signal, 'SIGCONT', signal.SIGTERM)
-```
-
-## 📊 Çıktı Formatı
-
-```json
-{
-  "report_text": "Şirket risk analizi...",
-  "is_banned": false,
-  "confidence_score": 85,
-  "sources": ["news", "gazette"],
-  "status": "SUCCESS"
-}
-```
-
-## 🤝 Katkıda Bulunma
-
-1. Fork yapın
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit atın (`git commit -m 'Add amazing feature'`)
-4. Push yapın (`git push origin feature/amazing-feature`)
-5. Pull Request açın
-
-## 📄 Lisans
-
-Bu proje KKB Hackathon için geliştirilmiştir.
+- **Veri Tutarlılığı**: Bazen TOBB veya İlan servisleri yanıt vermeyebilir ("Login Failed" vb.). Sistem bu durumlarda hata vermez, raporda "Veri erişilemedi" notu düşerek analize devam eder.
+- **Yasaklı Kontrolü**: `check_banned_status` aracı hem önbellek hem de canlı kaynakları (PDF) kontrol eder.
+- **PDF Karakter**: Türkçe karakter sorunlarını önlemek için özel font sanitization mekanizması aktiftir.
 
 ## 👥 Ekip
 
-KKB Hackathon - Agentic AI Team
+**KKB Hackathon - StackOverflow Team**
 
----
+- Yusuf Özdil
+- Atahan Düryaz
+- Barış Uzel
+- Nika Golestani
+- Tuba Aykan
 
-**⚡ Powered by CrewAI, KKB Kloudeks API & Streamlit**
+

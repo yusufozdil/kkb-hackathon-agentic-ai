@@ -107,18 +107,22 @@ class OrchestratorTools:
             - force_scan (bool) optional: ignore cache/DB and rescan PDFs.
         Returns: {"found": bool, "count": int, "records": [...]}
         """
+        print(f"🔧 [TOOL DEBUG] Entering Check Banned Status for {company_name}")
         if check_banned_status:
             try:
                 company = _coerce_str(company_name)
                 s, e = _validate_dates(_coerce_str(start_date), _coerce_str(end_date))
                 force = _coerce_bool(force_scan)
-                return check_banned_status(
+                res = check_banned_status(
                     company_name=company,
                     start_date=s,
                     end_date=e,
                     force_scan=force,
                 )
+                print(f"🔧 [TOOL DEBUG] Exiting Check Banned Status (Success)")
+                return res
             except Exception as exc:
+                print(f"🔧 [TOOL DEBUG] Exiting Check Banned Status (Error: {exc})")
                 return {"error": f"check_banned_tool validation failed: {exc}"}
         return {"error": "real tool not found, check python path."}
 
@@ -128,20 +132,34 @@ class OrchestratorTools:
         Fetches company details from Trade Registry (TOBB) with OCR.
         NOTE: This tool is OPTIONAL. If it fails (Login Failed), continue with other sources.
         """
+        print(f"🔧 [TOOL DEBUG] Entering Fetch Trade Registry for {company_name}")
         if fetch_trade_registry:
             try:
                 company = _coerce_str(company_name)
                 s, e = _validate_dates(_coerce_str(start_date), _coerce_str(end_date))
                 result = fetch_trade_registry(company, s, e)
+                
+                # Post-process to reduce token count (MANDATORY FIX FOR LLM CRASH)
+                if isinstance(result, dict) and "ilanlar" in result and isinstance(result["ilanlar"], list):
+                    # Slice to max 5 items - most recent are most important
+                    result["ilanlar"] = result["ilanlar"][:5]
+                    # Also simplify each item if needed
+                    for ilan in result["ilanlar"]:
+                        # Keep only essential fields if it has many keys
+                        pass
+
                 # Check if login failed
                 if isinstance(result, dict) and result.get("status") == "Login Failed":
+                    print(f"🔧 [TOOL DEBUG] Exiting Fetch Trade Registry (Login Failed)")
                     return {
                         "status": "Trade Registry Unavailable",
                         "message": "TOBB login failed (CAPTCHA issue). This is expected and not a risk factor.",
                         "data": []
                     }
+                print(f"🔧 [TOOL DEBUG] Exiting Fetch Trade Registry (Success)")
                 return result
             except Exception as exc:
+                print(f"🔧 [TOOL DEBUG] Exiting Fetch Trade Registry (Error: {exc})")
                 return {
                     "status": "Trade Registry Unavailable",
                     "message": f"TOBB service error: {exc}. This is a technical issue, not a risk factor.",
@@ -155,12 +173,27 @@ class OrchestratorTools:
         Fetches Turkish news within date range using Google News RSS.
         Returns list of {title, link, published, source, language}.
         """
+        print(f"🔧 [TOOL DEBUG] Entering Fetch News for {company_name}")
         if fetch_news_tr:
             try:
                 company = _coerce_str(company_name)
                 s, e = _validate_dates(_coerce_str(start_date), _coerce_str(end_date))
-                lim = _coerce_int(limit)
-                items = fetch_news_tr(company, s, e, limit=lim)
+                # FORCE LIMIT TO 10 TO PREVENT LLM CRASH
+                limit_val = _coerce_int(limit)
+                if limit_val > 10:
+                    limit_val = 10
+                
+                items = fetch_news_tr(company, s, e, limit=limit_val)
+                
+                # Post-process to reduce token count
+                # fetch_news_tr returns a list of items, so we operate directly on 'items'
+                items = items[:10] # Slice to absolute max 10
+                # Minimize fields - current fields (title, link, published, source, language) are already minimal.
+                # No further action needed here unless new verbose fields are added by fetch_news_tr.
+                for item in items:
+                    pass
+
+                print(f"🔧 [TOOL DEBUG] Exiting Fetch News (Found {len(items)} items)")
                 return {
                     "count": len(items),
                     "items": items,
@@ -168,6 +201,7 @@ class OrchestratorTools:
                     "end_date": e,
                 }
             except Exception as e:
+                print(f"🔧 [TOOL DEBUG] Exiting Fetch News (Error: {e})")
                 return {"error": f"news_service failed: {e}", "start_date": start_date, "end_date": end_date}
         return {"error": "news_service not found"}
 
@@ -178,12 +212,15 @@ class OrchestratorTools:
         NOTE: This tool is OPTIONAL and may take 15-30 seconds. If it fails or times out, continue with other sources.
         Returns: {"status": str, "data": {...}, "message": str}
         """
+        print(f"🔧 [TOOL DEBUG] Entering Fetch Tender Data for {company_name}")
         if fetch_ihale_data:
             try:
                 company = _coerce_str(company_name)
                 result = fetch_ihale_data(company, timeout=20000)  # 20 second timeout
+                print(f"🔧 [TOOL DEBUG] Exiting Fetch Tender Data")
                 return result
             except Exception as exc:
+                print(f"🔧 [TOOL DEBUG] Exiting Fetch Tender Data (Error: {exc})")
                 return {
                     "status": "error",
                     "data": None,
@@ -198,15 +235,30 @@ class OrchestratorTools:
         NOTE: This tool is OPTIONAL. If it fails or times out, continue with other sources.
         Returns: {"status": str, "count": int, "announcements": [...]}
         """
+        print(f"🔧 [TOOL DEBUG] Entering Fetch Public Announcements for {company_name}")
         if fetch_ilan_gov_announcements:
             try:
                 company = _coerce_str(company_name)
                 s, e = _validate_dates(_coerce_str(start_date), _coerce_str(end_date))
                 limit = _coerce_int(max_results)
-                if limit <= 0:
-                    limit = 20
-                return fetch_ilan_gov_announcements(company, s, e, max_results=limit)
+                if limit > 10:
+                    limit = 10  # Force limit to 10 to prevent LLM context overflow
+                res = fetch_ilan_gov_announcements(company, s, e, max_results=limit)
+                
+                # Post-process to reduce token count
+                if "announcements" in res:
+                    # Slice to absolute max 10 just in case
+                    res["announcements"] = res["announcements"][:10]
+                    for ann in res["announcements"]:
+                        # Remove empty or verbose fields
+                        ann.pop("full_text", None)
+                        if "summary" in ann and len(ann["summary"]) > 100:
+                            ann["summary"] = ann["summary"][:100] + "..."
+                        
+                print(f"🔧 [TOOL DEBUG] Exiting Fetch Public Announcements (Count: {res.get('count', 0)})")
+                return res
             except Exception as exc:
+                print(f"🔧 [TOOL DEBUG] Exiting Fetch Public Announcements (Error: {exc})")
                 return {
                     "status": "error",
                     "company": str(company_name),

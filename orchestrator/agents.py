@@ -15,7 +15,8 @@ llm = LLM(
     api_key=os.getenv("OPENAI_API_KEY"),
     base_url=os.getenv("OPENAI_BASE_URL"),
     temperature=0.7,
-    max_tokens=8192  # Uzun ve detaylı raporlar için artırıldı
+    max_tokens=8192,
+    timeout=600  # 10 dakika timeout (büyük model için)
 )
 
 
@@ -23,33 +24,17 @@ class OrchestratorAgents:
     def lead_researcher(self):
         return Agent(
             role="Lead Researcher",
-            goal="I WILL call exactly 4 tools in strict sequence: 1) Check Banned Status 2) Fetch Trade Registry 3) Fetch News 4) Fetch Public Announcements. I will NOT provide Final Answer until ALL 4 tools are called.",
+            goal="Execute the assigned research task with precision and document the results.",
             backstory=(
                 "You are a robotic, methodical data collector who follows instructions EXACTLY as written. "
-                "You do NOT think, interpret, or make decisions - you simply execute tools in sequence. "
-                "\n\n"
-                "YOUR ONLY JOB:\n"
-                "1️⃣ Call 'Check Banned Status' → document result → continue\n"
-                "2️⃣ Call 'Fetch Trade Registry' → document result → continue\n"
-                "3️⃣ Call 'Fetch News' → document result → continue\n"
-                "4️⃣ Call 'Fetch Public Announcements' → document result → continue\n"
-                "5️⃣ Provide Final Answer with ALL 4 tool results\n"
-                "\n"
-                "STRICT RULES:\n"
-                "❌ You CANNOT skip step 3 (Fetch News) even if steps 1-2 have data\n"
-                "❌ You CANNOT skip step 4 (Fetch Public Announcements) even if steps 1-3 have data\n"
-                "❌ You CANNOT provide Final Answer before completing ALL 4 steps\n"
-                "❌ You CANNOT make up or assume tool results - if you didn't call it, you don't have data\n"
-                "✅ You MUST call each tool INDIVIDUALLY with separate tool invocations\n"
-                "✅ You MUST wait for actual tool response before moving to next tool\n"
-                "\n"
-                "If you provide Final Answer after only 2 tools, your work will be REJECTED."
+                "You do not need to decide which tool to call; the task description will tell you EXACTLY what to do. "
+                "Your job is to execute the requested tool, capture the output, and report it effectively."
             ),
             tools=[
                 OrchestratorTools.check_banned_tool,
                 OrchestratorTools.fetch_trade_registry_tool,
                 OrchestratorTools.fetch_news_tool,
-                OrchestratorTools.fetch_ilan_gov_tool,  # Konkordato için KRİTİK!
+                OrchestratorTools.fetch_ilan_gov_tool,
                 OrchestratorTools.fetch_ihale_tool,
             ],
             allow_delegation=False,
@@ -78,7 +63,10 @@ class OrchestratorAgents:
                 "3. Include EVERY news article URL in the sources field\n"
                 "4. Use proper date format: '8 Aralık 2025' not '08 Aralık 2025'\n"
                 "5. Confidence scores must follow strict rules based on findings\n"
-                "6. Write as a professional analyst, not as a programmer"
+                "6. Write as a professional analyst, not as a programmer\n"
+                "7. NEGATIVE LANGUAGE RULES:\n"
+                "   - If NO Concordat (Konkordato) is found: DO NOT say 'Konkordato bulunamadı'. Simply DO NOT MENTION it or say 'Konkordato ilanı yoktur'.\n"
+                "   - If NO Tender Ban (İhale Yasağı) is found: DO NOT say 'Veritabanında bulunamadı'. Say 'İhale yasağı yoktur' (positive confirmation)."
             ),
             tools=[],  # Analyst mostly just reads the context provided by Researcher
             allow_delegation=False,
