@@ -44,22 +44,22 @@ Sistem; Kullanıcı Arayüzü, Ajan Orkestrasyonu, Araçlar (Tools) ve Veri Serv
 
 ```mermaid
 graph TD
-    User([Kullanıcı]) -->|Web UI| Streamlit[Streamlit Arayüzü]
-    Streamlit -->|Başlat| Orch[Orchestrator (CrewAI)]
+    User([Kullanıcı]) -->|Web UI| Streamlit["Streamlit Arayüzü"]
+    Streamlit -->|Başlat| Orch["Orchestrator (CrewAI)"]
     
     subgraph "Agentic Layer"
-        Orch -->|Görev 1-4| Researcher[Lead Researcher Agent]
-        Orch -->|Görev 5| Analyst[Reporting Analyst Agent]
+        Orch -->|Görev 1-4| Researcher["Lead Researcher Agent"]
+        Orch -->|Görev 5| Analyst["Reporting Analyst Agent"]
         
-        Researcher -->|Karar & Aksiyon| Tools[Agent Tools]
-        Analyst -->|Konsolidasyon| PDF[PDF Generator]
+        Researcher -->|Karar & Aksiyon| Tools["Agent Tools"]
+        Analyst -->|Konsolidasyon| PDF["PDF Generator"]
     end
     
     subgraph "Service Layer"
-        Tools -->|Döküman| Banned[Yasaklı Kontrolü (OCR)]
-        Tools -->|Haber| News[Google News Service]
-        Tools -->|Resmi Veri| TOBB[Ticaret Sicil (TOBB)]
-        Tools -->|İlan| Ilan[Kamu İlanları]
+        Tools -->|Döküman| Banned["Yasaklı Kontrolü (OCR)"]
+        Tools -->|Haber| News["Google News Service"]
+        Tools -->|Resmi Veri| TOBB["Ticaret Sicil (TOBB)"]
+        Tools -->|İlan| Ilan["Kamu İlanları"]
     end
     
     Tools -->|Ham Veri| Researcher
