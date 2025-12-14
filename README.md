@@ -35,7 +35,65 @@ Bu sistem, 4 farklı veri kaynağını tarayarak şirketler hakkında detaylı r
     *   Türkçe karakter uyumlu (Font sanitization).
     *   Streamlit tabanlı modern kullanıcı arayüzü.
 
-## 🚀 Kurulum ve Çalıştırma Rehberi
+## 🧠 Teknik Mimari ve Tasarım
+
+Bu proje, modern **Agentic AI** prensipleri ve **Modüler Mikroservis** yaklaşımı ile tasarlanmıştır.
+
+### 1. Genel Mimari Tasarımı
+Sistem; Kullanıcı Arayüzü, Ajan Orkestrasyonu, Araçlar (Tools) ve Veri Servisleri olmak üzere 4 ana katmandan oluşur.
+
+```mermaid
+graph TD
+    User([Kullanıcı]) -->|Web UI| Streamlit[Streamlit Arayüzü]
+    Streamlit -->|Başlat| Orch[Orchestrator (CrewAI)]
+    
+    subgraph "Agentic Layer"
+        Orch -->|Görev 1-4| Researcher[Lead Researcher Agent]
+        Orch -->|Görev 5| Analyst[Reporting Analyst Agent]
+        
+        Researcher -->|Karar & Aksiyon| Tools[Agent Tools]
+        Analyst -->|Konsolidasyon| PDF[PDF Generator]
+    end
+    
+    subgraph "Service Layer"
+        Tools -->|Döküman| Banned[Yasaklı Kontrolü (OCR)]
+        Tools -->|Haber| News[Google News Service]
+        Tools -->|Resmi Veri| TOBB[Ticaret Sicil (TOBB)]
+        Tools -->|İlan| Ilan[Kamu İlanları]
+    end
+    
+    Tools -->|Ham Veri| Researcher
+    Analyst -->|Final Rapor| Streamlit
+```
+
+### 2. Agentic Mimari ve Karar Alma Süreci
+Sistemde **Sequential Process (Sıralı İşlem)** mimarisi kullanılır. Her ajan kendi görevini tamamlayıp çıktısını bir sonraki ajana devreder.
+
+*   **ReAct (Reasoning + Acting) Döngüsü:**
+    Ajanlar sadece komut uygulamaz, karar verir. Örnek bir düşünce döngüsü:
+    1.  *Gözlem:* Kullanıcı "X Şirketi"ni sordu.
+    2.  *Düşünce:* "Önce bu şirketin yasaklı olup olmadığına bakmalıyım."
+    3.  *Aksiyon:* `check_banned_tool` aracını çağır.
+    4.  *Sonuç:* Yasaklı değil.
+    5.  *Düşünce:* "Şimdi haberleri kontrol etmeliyim."
+
+*   **Rol Dağılımı:**
+    *   **Lead Researcher:** "Sahadaki Dedektif". Ham veriyi toplar, temizler ve doğrular.
+    *   **Reporting Analyst:** "Masa başı Analist". Toplanan veriyi finansal bir perspektifle yorumlar ve nihai raporu yazar.
+
+### 3. Modüler Kod Yapısı
+Proje, her biri tek bir sorumluluğa sahip bağımsız modüllerden oluşur:
+
+*   **`orchestrator/`**: Ajanların beyni. Görevler (`tasks.py`), roller (`agents.py`) ve araç tanımları (`tools.py`) burada bulunur.
+*   **`services/` (Root)**: Dış dünya ile iletişim kuran servisler (`news_service.py`, `ilan_gov_service.py`). Bu servisler ajanlardan bağımsızdır, tek başlarına da çalışabilirler.
+*   **`TOBB/`**: Ticaret Sicil Gazetesi entegrasyonu. Karmaşık captcha ve oturum işlemlerini yönetir.
+
+### 4. Döküman Okuma ve OCR Stratejisi
+Yasaklı listesi kontrolü (`tool_banned_check.py`), hibrit bir yaklaşım kullanır:
+
+1.  **Text Layer Analizi:** Önce PDF'in metin katmanını okumaya çalışır (Hızlı ve Ucuz).
+2.  **OCR Fallback (Görüntü İşleme):** Eğer metin katmanı bozuksa veya şirket ismi tablolarda resim olarak saklanmışsa, **EasyOCR** ve **OpenCV** devreye girer.
+3.  **Fuzzy Matching:** OCR hatalarını tolere etmek için "RapidFuzz" kütüphanesi ile yaklaşık eşleşme (%85 benzerlik) aranır.
  
 Bu projeyi kendi bilgisayarınızda (local) çalıştırmak için aşağıdaki adımları sırasıyla takip edin.
  
