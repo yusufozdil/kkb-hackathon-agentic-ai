@@ -3,188 +3,111 @@ from .schemas import RiskReport
 
 
 class OrchestratorTasks:
-    def research_task(self, agent, company_name, start_date, end_date):
+    def check_banned_task(self, agent, company_name, start_date, end_date):
         return Task(
             description=(
-                f"Collect all available information for company '{company_name}' between '{start_date}' and '{end_date}'.\n"
-                "⚠️ CRITICAL: You MUST call ALL 3 tools below. Skipping any REQUIRED tool will cause task failure.\n\n"
-                "🔴 TOOL 1: Check Banned Status [REQUIRED - NEVER SKIP]\n"
-                "   - YOU MUST CALL THIS TOOL FIRST!\n"
-                "   - STRICT INPUT FORMAT:\n"
-                "     {\"company_name\": \"" + company_name + "\", \"start_date\": \"" + start_date + "\", \"end_date\": \"" + end_date + "\", \"force_scan\": false}\n"
-                "   - NEVER send tool argument schemas (type/description). Only literal primitive values (string/int/bool).\n"
-                "   - NEVER change company_name/start_date/end_date values; use EXACTLY as shown above.\n"
-                "   - If result is empty, do not re-check.\n\n"
-                "🟡 TOOL 2: Fetch Trade Registry [OPTIONAL - if fails, continue]\n"
-                "   - Example: {\"company_name\": \"" + company_name + "\", \"start_date\": \"" + start_date + "\", \"end_date\": \"" + end_date + "\"}\n"
-                "   - If this tool returns 'Login Failed' or 'error', note the failure and move on immediately. Do NOT retry.\n\n"
-                "🔴 TOOL 3: Fetch News [REQUIRED - NEVER SKIP]\n"
-                "   ⚠️ YOU ABSOLUTELY MUST CALL THIS TOOL! THIS IS NOT OPTIONAL!\n"
-                "   - STRICT INPUT FORMAT:\n"
-                "     {\"company_name\": \"" + company_name + "\", \"start_date\": \"" + start_date + "\", \"end_date\": \"" + end_date + "\", \"limit\": 100}\n"
-                "   - Dates must be YYYYMMDD (8 digits) - use EXACTLY: start_date=\"" + start_date + "\", end_date=\"" + end_date + "\"\n"
-                "   - NEVER change the provided dates; do not invent other dates.\n"
-                "   - Even if banned list or registry is empty, YOU MUST STILL FETCH NEWS!\n"
-                "   - If you skip this tool, the entire task will be marked as FAILED.\n\n"
-                "EXECUTION ORDER:\n"
-                "   1️⃣ Call 'Check Banned Status' tool\n"
-                "   2️⃣ Call 'Fetch Trade Registry' tool (if fails, continue)\n"
-                "   3️⃣ Call 'Fetch News' tool (MANDATORY - do not skip under any circumstances)\n"
-                "   4️⃣ Compile all raw findings into a structured summary\n\n"
-                "Global guardrails:\n"
-                "   - Do NOT echo or send schema metadata (type/description) to tools.\n"
-                "   - Do NOT wrap values in nested objects; pass raw literals only.\n"
-                "   - If a tool returns a validation error about schemas/types, immediately retry ONCE with the exact example format above; then move on.\n"
-                "   - If 'Fetch Trade Registry' fails, that's OK - continue with remaining sources.\n"
-                "   - Final Answer is NOT a tool; only use the provided tools.\n"
-                "Compile all raw findings into a structured summary for the analyst. YOU MUST mention which tools were called and their results.\n"
-                "For the Banned List check, ALWAYS include the 'date_range_checked' field from the tool result in your summary."
+                f"Step 1/4: Check Banned List for '{company_name}'.\n"
+                f"You MUST call the 'Check Banned Status' tool with these exact parameters:\n"
+                f"{{\"company_name\": \"{company_name}\", \"start_date\": \"{start_date}\", \"end_date\": \"{end_date}\", \"force_scan\": false}}\n\n"
+                "If the tool returns found=true, note the details. If found=false, note that no ban was found.\n"
+                "Do NOT do anything else. Do NOT call other tools."
+            ),
+            agent=agent,
+            expected_output="A summary of the Banned Status check (Found/Not Found).",
+        )
+
+    def fetch_registry_task(self, agent, company_name, start_date, end_date):
+        return Task(
+            description=(
+                f"Step 2/4: Fetch Trade Registry Data for '{company_name}'.\n"
+                f"You MUST call the 'Fetch Trade Registry' tool with these exact parameters:\n"
+                f"{{\"company_name\": \"{company_name}\", \"start_date\": \"{start_date}\", \"end_date\": \"{end_date}\"}}\n\n"
+                "If it returns 'Login Failed' or 'Not Found', that is acceptable. Just document the result.\n"
+                "Do NOT do anything else. Do NOT call other tools."
+            ),
+            agent=agent,
+            expected_output="A summary of Trade Registry findings.",
+        )
+
+    def fetch_news_task(self, agent, company_name, start_date, end_date):
+        return Task(
+            description=(
+                f"Step 3/4: Fetch News for '{company_name}'.\n"
+                f"You MUST call the 'Fetch News' tool with these exact parameters:\n"
+                f"{{\"company_name\": \"{company_name}\", \"start_date\": \"{start_date}\", \"end_date\": \"{end_date}\", \"limit\": 10}}\n\n"
+                "This step is MANDATORY. You must execute the tool and retrieve the news items.\n"
+                "Do NOT do anything else. Do NOT call other tools."
+            ),
+            agent=agent,
+            expected_output="A summary of News findings (count of articles found).",
+        )
+
+    def fetch_announcements_task(self, agent, company_name, start_date, end_date):
+        return Task(
+            description=(
+                f"Step 4/4: Fetch Public Announcements for '{company_name}'.\n"
+                f"You MUST call the 'Fetch Public Announcements' tool with these exact parameters:\n"
+                f"{{\"company_name\": \"{company_name}\", \"start_date\": \"{start_date}\", \"end_date\": \"{end_date}\", \"max_results\": 20}}\n\n"
+                "This step is CRITICAL for legal risk (konkordato, bankruptcy).\n"
+                "Do NOT do anything else. Do NOT call other tools."
+            ),
+            agent=agent,
+            expected_output="A summary of Public Announcements findings.",
+        )
+
+    def consolidate_research_task(self, agent, company_name):
+        return Task(
+            description=(
+                f"Step 5: Consolidate all research findings for '{company_name}'.\n"
+                "Review the outputs from the previous 4 tasks (Banned, Registry, News, Announcements).\n"
+                "Create a comprehensive summary that confirms all 4 tools were called.\n"
+                "You do NOT need to call any tools here. Just aggregate the data from context."
             ),
             agent=agent,
             expected_output=(
-                "A comprehensive and detailed summary of raw data from all three sources. MUST include:\n\n"
-                "BANNED LIST CHECK RESULTS:\n"
-                "- State clearly: 'found: [true/false]' and 'count: [number]'\n"
-                "- Include 'date_range_checked' value\n"
-                "- If found=true: List ALL record details:\n"
-                "  * company_name_raw\n"
-                "  * ban_start_date or gazete_tarihi\n"
-                "  * idare_unvan (if available)\n"
-                "  * yasak_suresi (if available)\n"
-                "  * All other fields from the records array\n"
-                "- If found=false: State 'No ban records found in the checked date range.'\n\n"
-                "TRADE REGISTRY:\n"
-                "- All available information (or note if unavailable)\n\n"
-                "NEWS ANALYSIS:\n"
-                "- Each news title (in Turkish)\n"
-                "- Publication date\n"
-                "- Full URL/link for each article\n"
-                "- Source name\n"
-                "- Brief summary of content\n\n"
-                "⚠️ CRITICAL: Pass the RAW tool results (including found/count fields) and ALL news URLs to the analyst."
-            )
+                "MANDATORY CHECKLIST (START WITH THIS):\n"
+                "✓ Banned Status: {STATUS}\n"
+                "✓ Trade Registry: {STATUS}\n"
+                "✓ News: {STATUS} (Count: {COUNT})\n"
+                "✓ Public Announcements: {STATUS}\n\n"
+                "Then provide a concise summary of ALL findings."
+            ),
+            context=None, # Context will be wired up in main.py
         )
 
     def reporting_task(self, agent, company_name):
         return Task(
             description=(
-                f"Analyze the raw data collected for '{company_name}'. "
-                "Write a comprehensive, detailed, and professional financial risk assessment report.\n\n"
-                "📋 RAPOR İÇERİĞİ GEREKLİLİKLERİ (Minimum 1000 kelime hedefle):\n\n"
-                "1. YÖNETİCİ ÖZETİ (2-3 paragraf):\n"
-                "   - Genel risk değerlendirmesi\n"
-                "   - Ana bulgular ve öneriler\n"
-                "   - Kritik risk faktörleri varsa vurgula\n\n"
-                "2. ŞİRKET HAKKINDA GENEL BİLGİLER:\n"
-                "   - Ticaret sicili bilgileri (mevcutsa)\n"
-                "   - Faaliyet alanı ve sektör\n"
-                "   - Tespit edilen diğer bilgiler\n\n"
-                "3. YASAKLI LİSTE ANALİZİ:\n"
-                "   - ⚠️ CRITICAL: Check the 'found' field from the Banned List tool result:\n"
-                "     * If found=true AND count>0: The company IS BANNED. You MUST state this clearly.\n"
-                "     * If found=false: The company is NOT banned.\n"
-                "   - ⚠️ Use the EXACT date range from 'date_range_checked' field when mentioning the scan period.\n"
-                "   - NEVER use today's date or invent dates. Only use the date_range_checked value.\n"
-                "   - If banned (found=true), include ALL details from records:\n"
-                "     * Company name (company_name_raw)\n"
-                "     * Ban start date (ban_start_date or gazete_tarihi)\n"
-                "     * Official Gazette date (gazete_tarihi)\n"
-                "     * Authority information (idare_unvan, idare_adres)\n"
-                "     * Ban duration (yasak_suresi) if available\n"
-                "     * Record number (yasak_kayit_no) if available\n"
-                "   - If not banned (found=false), clearly state no ban records were found\n\n"
-                "4. HABER ANALİZİ VE MEDYA İZLEMESİ:\n"
-                "   - Toplanan haber sayısı ve tarih aralığı\n"
-                "   - Önemli haber başlıkları ve içerikleri\n"
-                "   - Pozitif/negatif haber dengesi\n"
-                "   - Tespit edilen trendler ve paternler\n"
-                "   - Medyada yer alan konular (finansal, hukuki, operasyonel vb.)\n\n"
-                "5. RİSK DEĞERLENDİRMESİ:\n"
-                "   - Finansal riskler\n"
-                "   - Yasal riskler\n"
-                "   - İtibar riskleri\n"
-                "   - Operasyonel riskler\n"
-                "   - Her risk kategorisi için detaylı açıklama\n\n"
-                "6. SONUÇ VE ÖNERİLER:\n"
-                "   - Genel değerlendirme\n"
-                "   - Yatırım/işbirliği önerileri\n"
-                "   - İzlenmesi gereken konular\n\n"
-                "⚠️ CRITICAL BANNED STATUS LOGIC:\n"
-                "   - Check the research summary for Banned List results\n"
-                "   - If research shows 'found: true' OR 'count > 0': SET is_banned=True in your output\n"
-                "   - If research shows 'found: false' OR 'count: 0': SET is_banned=False in your output\n"
-                "   - When is_banned=True, you MUST:\n"
-                "     * Write in the report: 'ŞİRKET YASAKLI LİSTEDE YER ALMAKTADIR' or similar clear statement\n"
-                "     * Highlight it as CRITICAL RISK with details (dates, authority, etc.)\n"
-                "     * Include all ban record details in the Yasaklı Liste Analizi section\n"
-                "   - When is_banned=False, write: 'Şirket yasaklı listede yer almamaktadır'\n\n"
-                "Ensure the 'report_text' is in professional Turkish with detailed analysis.\n\n"
-                "⚠️ YAZIM KURALLARI:\n"
-                "- ASLA teknik değişken isimleri kullanma (örn: 'found: False', 'count: 0', 'status: SUCCESS')\n"
-                "- Yasaklı Liste sonuçlarını NET ifade et:\n"
-                "  * Yasaklı ise: 'Şirket [tarih] tarihli Resmi Gazete\'de yasaklı listede yer almaktadır'\n"
-                "  * Yasaklı değilse: 'Belirtilen tarih aralığında şirketin yasaklı listede kaydına rastlanmamıştır'\n"
-                "- Tüm haber başlıkları ve içerikleri Türkçe olarak yaz (İngilizce başlık kullanma)\n"
-                "- Haber kaynaklarında URL linklerini belirt\n"
-                "- Tarih formatı: '29 Kasım 2025' (08 Aralık değil, 8 Aralık)\n"
-                "- Tarih aralığı belirtirken tool'dan dönen 'date_range_checked' değerini kullan\n\n"
-                "⚠️ MANDATORY DATA VALIDATION:\n"
-                "   - You MUST have received NEWS data from the research agent.\n"
-                "   - If news data is missing, the report is INCOMPLETE and you must indicate this in status.\n"
-                "   - The 'sources' field MUST include:\n"
-                "     * 'gazette' (since Banned List was checked)\n"
-                "     * ALL individual news article URLs from the research summary\n"
-                "     * Do NOT use generic 'news' - use actual URLs\n\n"
-                "NOTE: If Trade Registry (TOBB) data failed to load, write the report based on available sources (Banned List + News). "
-                "Mention in report_text that Trade Registry data was unavailable but do NOT treat it as a risk factor.\n\n"
-                "⚠️ CRITICAL OUTPUT FORMAT (ZERO TOLERANCE - ANY DEVIATION CAUSES SYSTEM FAILURE):\n\n"
-                "YOU MUST RETURN PURE RAW JSON WITH NO FORMATTING WHATSOEVER.\n"
-                "DO NOT USE BACKTICKS (```). DO NOT USE CODE FENCES. DO NOT ADD ANY TEXT BEFORE OR AFTER.\n"
-                "START YOUR RESPONSE IMMEDIATELY WITH { AND END WITH }. NOTHING ELSE.\n\n"
-                "CORRECT FORMAT (START WITH { IMMEDIATELY):\n"
-                '{"report_text": "Analiz metni Türkçe", "is_banned": false, "confidence_score": 75, "sources": ["news"], "status": "SUCCESS"}\n\n'
-                "ABSOLUTELY FORBIDDEN (SYSTEM WILL CRASH):\n"
-                "❌ ```json <- NEVER USE THIS\n"
-                "❌ ``` <- NEVER USE THIS\n"
-                "❌ Any text before {\n"
-                "❌ Any text after }\n"
-                "❌ Markdown in report_text (##, ###, *, -)\n"
-                "❌ Extra keys beyond 5 required\n\n"
-                "REMEMBER: Your FIRST character must be { and LAST character must be }. Period.\n\n"
-                "REQUIRED FIELDS (exactly 5):\n"
-                '1. "report_text": string (Turkish, plain text, no markdown)\n'
-                '2. "is_banned": boolean (true/false)\n'
-                '3. "confidence_score": integer (15-92, KURALLARA UYGUN)\n'
-                '4. "sources": array of strings - MUST include:\n'
-                '   * "gazette" if Banned List was checked\n'
-                '   * ALL individual news article URLs (not just "news")\n'
-                '   * Example: ["gazette", "https://news.google.com/article1", "https://news.google.com/article2"]\n'
-                '5. "status": string ("SUCCESS" or "ERROR")\n\n'
-                "⚠️ GÜVEN SKORU KURALLARI (SIKI TAKİP ET):\n"
-                "🔴 RULE 1 - BAN STATUS (HIGHEST PRIORITY):\n"
-                "   - If is_banned=True (company is on banned list): confidence_score MUST be 15-25\n"
-                "   - This rule OVERRIDES all other considerations\n"
-                "   - Being banned is a CRITICAL negative factor\n\n"
-                "🟡 RULES 2-5 - APPLY ONLY IF is_banned=False:\n"
-                "   - Yasaklı değil + negatif haberler varsa: 35-50\n"
-                "   - Yasaklı değil + karışık (pozitif/negatif) haberler: 55-70\n"
-                "   - Yasaklı değil + çoğunlukla pozitif haberler: 70-85\n"
-                "   - Yasaklı değil + tamamen pozitif haberler + güçlü performans: 85-92\n"
-                "   - Hiçbir zaman 95+ kullanma (belirsizlikler her zaman vardır)\n\n"
-                "EXAMPLE CORRECT OUTPUTS:\n\n"
-                "Example 1 - Company NOT banned:\n"
-                '{"report_text": "**Yönetici Özeti**\\n\\nŞirket analizi: Düşük risk profili görülmektedir. Yasaklı liste taramasında kayıt bulunmamıştır....", "is_banned": false, "confidence_score": 75, "sources": ["gazette", "https://news.example.com/1"], "status": "SUCCESS"}\n\n'
-                "Example 2 - Company IS banned:\n"
-                '{"report_text": "**Yönetici Özeti**\\n\\n⚠️ KRİTİK RİSK: Şirket 29 Kasım 2025 tarihli Resmi Gazete\'de yasaklı listede yer almaktadır. **Yasaklı Liste Analizi**\\n\\n20 Kasım - 30 Kasım 2025 tarihleri arasında yapılan taramada şirketin 29 Kasım 2025 tarihinde yasaklı listeye eklendiği tespit edilmiştir...", "is_banned": true, "confidence_score": 18, "sources": ["gazette", "https://news.example.com/1"], "status": "SUCCESS"}\n\n'
-                "REMEMBER: Return raw JSON only. No backticks, no markdown code fences, no extra text."
+                f"Analyze the collected data for '{company_name}' and generate a professional financial risk assessment report in Turkish.\n\n"
+                "# RAPOR İÇERİK GEREKSİNİMLERİ (Hedef 1000+ kelime):\n"
+                "1. YÖNETİCİ ÖZETİ: Risk genel bakışı, ana bulgular ve öneriler.\n"
+                "2. ŞİRKET BİLGİLERİ: Ticaret sicil detayları, sektör, adres, ihale geçmişi (varsa).\n"
+                "   - Sicil veya İhale verisi 'bulunamadı' ise, bunu bir risk olarak değil, bir durum tespiti olarak not edin.\n"
+                "3. YASAKLILIK LİSTESİ ANALİZİ (KRİTİK):\n"
+                "   - 'Bulundu' durumu varsa => 'ŞİRKET YASAKLI LİSTEDE MEVCUT' diyerek tüm detayları (tarih, kurum) belirtin.\n"
+                "   - Yoksa => 'Yasaklı listede kaydı yoktur' ifadesini kullanın ve KONTROL EDİLEN tarih aralığını belirtin.\n"
+                "4. KAMU İLANLARI:\n"
+                "   - SADECE bulunan ilanları özetleyin.\n"
+                "   - Eğer Konkordato ilanı VARSA, bunu mutlaka vurgulayın ve risk olarak belirtin.\n"
+                "   - Eğer Konkordato ilanı YOKSA, 'Konkordato ilanı bulunmamıştır' gibi cümleler KURMAYIN. Bu konuya hiç değinmeyin.\n"
+                "5. HABER ANALİZİ: Haberleri, duygu durumunu ve önemli olayları özetleyin. Tüm kaynaklara atıf yapın ama Linkleri sadece Kaynaklar kısmına koyun.\n"
+                "6. RİSK DEĞERLENDİRMESİ: Finansal, Yasal, İtibar ve Operasyonel riskler.\n"
+                "7. SONUÇ: Nihai karar ve öneriler.\n\n"
+                "KRİTİK KURALLAR:\n"
+                "- LİNK KULLANIMI: Rapor metni içinde ASLA link (https://...) kullanmayın. Linkleri sadece JSON çıktısındaki 'sources' listesine ve raporun en sonundaki 'KAYNAKLAR' listesine ekleyin.\n"
+                "- TON: Profesyonel Finansal Analist dili kullanın. Asla İngilizce kelime veya teknik jargon (found:false vb.) kullanmayın.\n"
+                "- TARİH FORMATI: '29 Kasım 2025' gibi uzun format kullanın.\n"
+                "- DOĞRULAMA: Haber/İlan verisi eksikse bunu not edin.\n\n"
+                "CONFIDENCE SCORE RULES:\n"
+                "- PRIORITY RULE: If multiple conditions apply, ALWAYS choose the LOWEST score range (Worst Case Scenario).\n"
+                "- 15-25: BANNED (is_banned=True) OR Critical Legal Issues (Banned overrides all).\n"
+                "- 20-35: KONKORDATO/Bankruptcy announcements (even if not banned).\n"
+                "- 35-50: Clean but Negative News.\n"
+                "- 55-70: Mixed News.\n"
+                "- 70-85: Mostly Positive.\n"
+                "- 85-92: Strong Positive.\n"
             ),
             agent=agent,
             output_pydantic=RiskReport,
-            expected_output=(
-                "A comprehensive RiskReport object with:\n"
-                "- report_text: Detailed Turkish risk analysis (minimum 1000 words)\n"
-                "- Covering all sections: Executive Summary, Company Info, Banned List, News Analysis, Risk Assessment, Conclusions\n"
-                "- Professional tone with specific examples and data points\n"
-                "- All required fields properly set"
-            )
+            expected_output="A RiskReport object with detailed Turkish report_text and valid metadata."
         )

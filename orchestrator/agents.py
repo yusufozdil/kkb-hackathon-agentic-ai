@@ -15,7 +15,8 @@ llm = LLM(
     api_key=os.getenv("OPENAI_API_KEY"),
     base_url=os.getenv("OPENAI_BASE_URL"),
     temperature=0.7,
-    max_tokens=8192  # Uzun ve detaylı raporlar için artırıldı
+    max_tokens=8192,
+    timeout=600  # 10 dakika timeout (büyük model için)
 )
 
 
@@ -23,24 +24,25 @@ class OrchestratorAgents:
     def lead_researcher(self):
         return Agent(
             role="Lead Researcher",
-            goal="Collect comprehensive, detailed data about the target company from ALL available sources: Trade Registry, Banned Lists, and News.",
+            goal="Execute the assigned research task with precision and document the results.",
             backstory=(
-                "You are a meticulous senior due diligence researcher with 15 years of experience. "
-                "You trust only verified data and believe in exhaustive research. "
-                "Your job is to use EVERY tool available and extract MAXIMUM information about a company. "
-                "You systematically check all sources, note every detail, and provide thorough documentation. "
-                "You never rush your work and always ensure completeness. "
-                "You do not make assumptions; you only report what your tools find with full context and details."
+                "You are a robotic, methodical data collector who follows instructions EXACTLY as written. "
+                "You do not need to decide which tool to call; the task description will tell you EXACTLY what to do. "
+                "Your job is to execute the requested tool, capture the output, and report it effectively."
             ),
             tools=[
                 OrchestratorTools.check_banned_tool,
                 OrchestratorTools.fetch_trade_registry_tool,
                 OrchestratorTools.fetch_news_tool,
+                OrchestratorTools.fetch_ilan_gov_tool,
+                OrchestratorTools.fetch_ihale_tool,
             ],
             allow_delegation=False,
             verbose=True,
-            max_iter=20,  # Daha fazla araştırma ve veri toplama için artırıldı
+            max_iter=35,  # 4 tool + retrials
             llm=llm,
+            memory=False,  # Disable memory to prevent over-thinking
+            respect_context_window=True,
         )
 
     def reporting_analyst(self):
@@ -61,7 +63,10 @@ class OrchestratorAgents:
                 "3. Include EVERY news article URL in the sources field\n"
                 "4. Use proper date format: '8 Aralık 2025' not '08 Aralık 2025'\n"
                 "5. Confidence scores must follow strict rules based on findings\n"
-                "6. Write as a professional analyst, not as a programmer"
+                "6. Write as a professional analyst, not as a programmer\n"
+                "7. NEGATIVE LANGUAGE RULES:\n"
+                "   - If NO Concordat (Konkordato) is found: DO NOT say 'Konkordato bulunamadı'. Simply DO NOT MENTION it or say 'Konkordato ilanı yoktur'.\n"
+                "   - If NO Tender Ban (İhale Yasağı) is found: DO NOT say 'Veritabanında bulunamadı'. Say 'İhale yasağı yoktur' (positive confirmation)."
             ),
             tools=[],  # Analyst mostly just reads the context provided by Researcher
             allow_delegation=False,

@@ -85,7 +85,7 @@ if analyze_button:
                     with col1:
                         st.metric(
                             "Yasak Durumu",
-                            "YASAKLİ ⛔" if report_data.get("is_banned") else "TEMİZ ✅"
+                            "YASAKLI" if report_data.get("is_banned") else "TEMİZ"
                         )
                     
                     with col2:
@@ -175,13 +175,13 @@ else:
     
     st.markdown("### 📋 Sistem Özellikleri")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.markdown("""
-        **🚫 Yasak Listesi Kontrolü**
+        **🚫 Yasak Listesi**
         - Resmi Gazete taraması
-        - OCR ile otomatik veri çıkarma
+        - Yasaklı firma kontrolü
         - Veritabanı önbellekleme
         """)
     
@@ -189,28 +189,34 @@ else:
         st.markdown("""
         **📰 Haber Analizi**
         - Google News taraması
-        - Türkçe kaynak filtreleme
-        - Tarih bazlı sıralama
+        - Negatif haber tespiti
+        - Son 2 yıllık arşiv
         """)
     
     with col3:
         st.markdown("""
         **🏢 Ticaret Sicili**
         - TOBB entegrasyonu
-        - Şirket bilgileri
-        - İlan takibi
+        - Şirket doğrulama
+        - Sicil gazetesi ilanları
+        """)
+
+    with col4:
+        st.markdown("""
+        **📢 Kamu İlanları**
+        - ilan.gov.tr taraması
+        - Konkordato & İflas
+        - Mahkeme kararları
         """)
     
     st.markdown("---")
     st.markdown("### 🤖 AI Teknolojisi")
     st.markdown("""
-    Bu sistem **CrewAI** framework'ü kullanarak:
-    - Lead Researcher: Veri toplama ve doğrulama
-    - Reporting Analyst: Risk analizi ve raporlama
-    
-    AI ajanları koordineli çalışarak kapsamlı due diligence gerçekleştirir.
+    Bu sistem **CrewAI** framework'ü ile 2 uzman ajanı yönetir:
+    1. **Lead Researcher**: 4 farklı kaynaktan (Resmi Gazete, Haberler, TOBB, Kamu İlanları) veri toplar, doğrular ve konsolide eder.
+    2. **Reporting Analyst**: Toplanan verileri finansal risk perspektifiyle analiz eder ve profesyonel due diligence raporu yazar.
     """)
 
 # Footer
 st.markdown("---")
-st.caption("🔐 KKB Hackathon - Agentic AI | Powered by CrewAI & Ollama")
+st.caption("KKB Hackathon - Agentic AI | Powered by CrewAI & OpenAI | v2.0")
